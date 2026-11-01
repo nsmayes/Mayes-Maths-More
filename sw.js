@@ -6,7 +6,7 @@
      first time the voice is used, or straight away with "Download Pip's voice" in the grown-ups' area, and after that it
      is always read from the device, never downloaded again.
    When any file changes, change VERSION so devices pick up the new copy. tests/run-checks.js checks FILES is complete. */
-var VERSION = 'v52';
+var VERSION = 'v53';
 var CACHE = 'mmm-app-' + VERSION, VOICE = 'mmm-voice-v1';
 var FILES = ['./', 'index.html', 'play.html', 'about.html', 'css/fonts.css', 'css/app.css', 'css/site.css', 'manifest.webmanifest', 'icon.svg', 'img/brand/mark.svg', 'img/brand/mark-small.svg',
   'img/icons/icon-192.png', 'img/icons/icon-512.png', 'img/icons/maskable-512.png', 'img/icons/apple-touch-icon-180.png', 'img/icons/favicon-32.png',

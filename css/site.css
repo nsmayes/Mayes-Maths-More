@@ -58,3 +58,7 @@ details ol { margin: 8px 0 2px; padding-left: 22px; }
 .brand-tag { color: #b9cfcb; margin-top: 6px; font-size: 1.02em; }
 .topbar svg { flex: none; }
 @media (max-width: 820px) { .brand-mark { width: 180px; height: 180px; } }
+/* the iPhone/iPad steps light up when "Install on this iPhone" is tapped */
+details.pulse { animation: stepsPulse 1.2s ease-in-out 2; }
+@keyframes stepsPulse { 50% { box-shadow: 0 0 0 6px rgba(242, 182, 50, .55); } }
+details .small { margin: 6px 0 0; font-size: .95em; color: var(--muted, #50696a); }
