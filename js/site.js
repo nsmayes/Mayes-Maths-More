@@ -1,0 +1,37 @@
+/* Mayes Maths & More — the front page: save the app for offline use, offer the Install button, and open the install
+   steps for the device in use. */
+(function (G) {
+  'use strict';
+  var O = G.OM.offline, doc = G.document, status = doc.getElementById('status'), btn = doc.getElementById('installBtn');
+  function say(t) { if (status) status.textContent = t; }
+  // already opened as an installed app: go straight in
+  if (O.installed()) { G.location.replace('play.html'); return; }
+  if (O.canSave) {
+    O.register();
+    G.navigator.serviceWorker.ready.then(function () { say('Saved on this device: the app now works offline.'); });
+  } else if (status) say('Opened from a file: to use it offline, open it from its web address instead.');
+  if (btn) {
+    var show = function () { btn.hidden = !O.installPrompt; };
+    O.onInstallReady = show; show();
+    btn.onclick = function () { O.install().then(function (ok) { if (ok) say('Installed. Look for Pip’s icon on this device.'); show(); }); };
+    O.onInstalled = function () { btn.hidden = true; say('Installed. Look for Pip’s icon on this device.'); };
+  }
+  // the optional natural voice: download it only if the grown-up chooses
+  var vb = doc.getElementById('voiceBtn'), vs = doc.getElementById('voiceStatus'), bar = doc.querySelector('.vbar');
+  if (vb) {
+    if (!O.canSave) { vb.hidden = true; vs.textContent = 'This copy was opened from a file and already includes the voice.'; }
+    else O.voiceSaved().then(function (saved) {
+      if (saved) { vb.hidden = true; vs.textContent = 'Pip’s voice is saved on this device.'; return; }
+      vb.onclick = function () {
+        vb.disabled = true; bar.hidden = false;
+        O.downloadVoice(function (f) { bar.firstChild.style.width = Math.round(f * 100) + '%'; vb.textContent = 'Downloading… ' + Math.round(f * 100) + '%'; })
+          .then(function () { vb.hidden = true; bar.hidden = true; vs.textContent = 'Done. Pip’s voice is saved on this device and works offline.'; })
+          .catch(function () { vb.disabled = false; vb.textContent = 'Try again'; vs.textContent = 'The download stopped. Check the internet connection and try again.'; });
+      };
+    });
+  }
+  // open the install steps for this device
+  var ua = (G.navigator.userAgent || '').toLowerCase(), os = /iphone|ipad|ipod/.test(ua) || (/macintosh/.test(ua) && G.navigator.maxTouchPoints > 1) ? 'ios' : /android/.test(ua) ? 'android' : /firefox/.test(ua) ? 'firefox' : /cros/.test(ua) ? 'chromeos' : /macintosh/.test(ua) ? 'mac' : /windows/.test(ua) ? 'windows' : 'linux';
+  var first = doc.querySelector('details[data-os~="' + os + '"]');
+  if (first) first.open = true;
+})(typeof window !== 'undefined' ? window : globalThis);
