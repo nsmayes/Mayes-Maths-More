@@ -944,3 +944,5 @@ label.ansline { max-width: 100%; } label.ansline input.ans { min-width: 0; flex:
 .motion-off .map .chest .lid, .motion-off .map .chest .sparks { animation: none; }
 .motion-off .map .chest.shiny .sparks { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { body:not(.motion-on) .map .chest .lid, body:not(.motion-on) .map .chest .sparks { animation: none; } body:not(.motion-on) .map .chest.shiny .sparks { opacity: 1; } }
+/* tall hats from the dressing-up chest may rise above the animal's own drawing area */
+svg.char { overflow: visible; }

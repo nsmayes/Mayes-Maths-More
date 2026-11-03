@@ -243,14 +243,14 @@
     var w = Object.assign({}, wear || {}), back = '', front = '';
     if (w.scarf && !w.neck) w.neck = 'scarf:' + (OLD_SCARF[w.scarf] || 'red');
     if (w.glasses === true && !w.eyes) w.eyes = 'round:black';
-    var gy = sp.eyes[0], gx = sp.eyes[1], gr = (sp.eyeR || 8.5) + 4, top = sp.top || 30;
+    var gy = sp.eyes[0], gx = sp.eyes[1], gr = (sp.eyeR || 8.5) + 4, top = sp.top || 30, hs = sp.hatS || .82;
     if (w.magic) { var m = parse(w.magic), mg = MAGIC[m.d] && MAGIC[m.d](); if (mg) { back += mg.back || ''; front += mg.front || ''; } }
     if (w.back) { var b = parse(w.back), bk = BACK[b.d] && BACK[b.d](b.c || COL.red, b.c2 || COL.yellow); if (bk) { back += bk.back || ''; front += bk.front || ''; } }
     var mid = '';
     if (w.neck) { var n = parse(w.neck); if (NECK[n.d]) mid += NECK[n.d](n.c || COL.red, n.c2 || COL.white); }
     if (w.badge) { var bd = parse(w.badge); if (BADGE[bd.d]) mid += '<circle cx="74" cy="110" r="8.5" fill="' + (bd.c || ({ moon: COL.navy, sun: COL.orange, paw: COL.brown, pi: COL.purple, plus: COL.teal, tick: COL.green, note: COL.purple, flower: COL.pink, rocket: COL.navy, smile: COL.yellow, football: COL.green })[bd.d] || COL.blue) + '" stroke="#fff" stroke-width="1.8"/>' + BADGE[bd.d](74, 110); }
     if (w.eyes) { var e = parse(w.eyes); if (EYES[e.d]) mid += EYES[e.d](e.c || INK, gy, gx, gr); }
-    if (w.hat) { var h = parse(w.hat), hs = HAT[h.d] ? HAT[h.d](h.c || COL.red) : OM.HAT(w.hat); if (hs) mid += '<g transform="translate(60 ' + top + ') scale(.82) translate(-60 -25)">' + hs + '</g>'; }
+    if (w.hat) { var h = parse(w.hat), hd = HAT[h.d] ? HAT[h.d](h.c || COL.red) : OM.HAT(w.hat); if (hd) mid += '<g transform="translate(60 ' + top + ') scale(' + hs + ') translate(-60 -25)">' + hd + '</g>'; }
     if (w.held) { var hd = parse(w.held); if (HELD[hd.d]) mid += HELD[hd.d](hd.c || COL.red); }
     return { back: back, front: mid + front };
   };

@@ -1140,7 +1140,7 @@
         '<li>Answers use <b>exact arithmetic</b> (no computer rounding errors). Methods and words match UK schools (e.g. “exchange”, never “borrow”).</li>' +
         '<li>Marking follows <b>KS2 mark-scheme conventions</b>: equivalent fractions accepted, money must be written correctly (£3.50 not £3.5), coordinates in the right order, 24-hour times without am/pm, and a <b>method mark</b> on 2-mark problems with no more than one arithmetic error.</li>' +
         '<li>The automated checker (<code>tests/run-checks.js</code>) generates tens of thousands of questions and fails if any answer is wrong, any limit is broken or any objective is missing content. The latest report is in <code>tests/content-report.md</code>.</li></ul>' +
-        '<h3>What still needs a person</h3><p>No automated check is perfect. Please use “Check the content” to look over topics, and look at anything your child reports.</p><p class="small-note">' + OM.APP_NAME + ' © 2026 Neil Mayes.</p></div>';
+        '<h3>What still needs a person</h3><p>No automated check is perfect. Please use “Check the content” to look over topics, and look at anything your child reports.</p><p class="small-note">' + OM.APP_NAME + ' · ' + (OM.versionText ? OM.versionText() : '') + ' · © 2026 Neil Mayes.</p></div>';
     }
     // remind grown-ups to back up once there is progress worth keeping (none yet, or more than 30 days ago)
     var hasProgress = ps.some(function (p) { return p.days.length > 0; }), stale = !s.lastBackup || Date.now() - s.lastBackup > 30 * 86400000;

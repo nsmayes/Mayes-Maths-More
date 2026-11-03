@@ -61,7 +61,7 @@
           '<path d="M56 72 L64 72 L60 77 Z" fill="#e0607a"/>' + smile(60, 77, 7) + '<rect x="57" y="81" width="6" height="6" rx="1.5" fill="#fff" stroke="' + c[1] + '" stroke-width="1"/>';
       },
       tail: function () { return '<circle cx="88" cy="132" r="8" fill="#fff"/>'; } },
-    hedgehog: { top: 38, name: 'Hedgehog', c: ['#a9774a', '#6e4a2c', '#f1dcb9'], eyes: [60, 13],
+    hedgehog: { top: 13, hatS: .9, name: 'Hedgehog', c: ['#a9774a', '#6e4a2c', '#f1dcb9'], eyes: [60, 13],
       head: function (c) {
         return '<path d="M12 64 L4 46 L20 46 L14 28 L32 32 L32 14 L48 24 L60 8 L72 24 L88 14 L88 32 L106 28 L100 46 L116 46 L108 64 Z" fill="' + c[1] + '"/>' +
           '<path d="M22 60 L18 46 L30 46 L28 32 L42 36 L46 22 L60 32 L74 22 L78 36 L92 32 L90 46 L102 46 L98 60 Z" fill="' + c[0] + '"/>' +
@@ -189,7 +189,7 @@
       var drawn = OM.drawOutfit(o.wear || { hat: o.hat, scarf: o.scarf, glasses: o.glasses }, sp);
       outfit = drawn.front; outfitBack = drawn.back;
     }
-    return '<svg class="char ' + role + ' ' + kind + ' ' + (o.cls || '') + '" style="--d:-' + (Math.random() * 5).toFixed(2) + 's" viewBox="0 -8 120 152" width="' + size + '" height="' + Math.round(size * 1.27) + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    return '<svg class="char ' + role + ' ' + kind + ' ' + (o.cls || '') + '" overflow="visible" style="--d:-' + (Math.random() * 5).toFixed(2) + 's" viewBox="0 -8 120 152" width="' + size + '" height="' + Math.round(size * 1.27) + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
       '<ellipse cx="60" cy="142" rx="34" ry="4" fill="' + INK + '" opacity=".12"/>' +
       outfitBack + (sp.tail ? sp.tail(c) : '') + '<g class="breathe">' + body + hoodie + armour + hood + sp.head(c) + eyes + face + crown + helmet + outfit + arms + '</g></svg>';
   };
