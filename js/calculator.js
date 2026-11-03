@@ -248,6 +248,7 @@
   function toggle(open) {
     if (!panel) build();
     st.open = !!open && enabled; userClosed = !st.open; userOpened = st.open; paint();
+    if (st.open && narrow() && OM.W && OM.W.hideKeypad) OM.W.hideKeypad();
     if (st.open) panel.focus({ preventScroll: true });
   }
   // Called by each screen: true shows the calculator, false hides it. Where a calculator is allowed it starts OPEN,

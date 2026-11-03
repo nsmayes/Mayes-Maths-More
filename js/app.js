@@ -25,28 +25,31 @@
   function esc(s) { return OM.esc(s); }
   function owl(mood, size, p) { p = p || App.profile || {}; var w = p.wearing || {}; return OM.owlSVG({ mood: mood, size: size, colour: p.colour, cls: mood === 'cheer' ? 'hopup' : '', tier: tier(p) }); }
   // the player's own animal, and the baddie they chose (the Cat King unless they picked another)
-  function avatar(size, p, mood, wear) { p = p || App.profile || {}; var w = wear || p.wearing || {}; return OM.animalSVG(p.avatar || 'otter', { role: 'avatar', size: size, mood: mood, wear: w, tier: tier(p) }); }
+  // Years 7 to 11 have a more life-like animal, more so each year (0.2 in Year 7 up to 1 in Year 11), unless they chose an earlier look
+  function realFor(p) { p = p || App.profile || {}; return tier(p) === 'pro' ? Math.min(1, Math.max(0.2, (yearOf(p) - 6) / 5)) : 0; }
+  function avatar(size, p, mood, wear) { p = p || App.profile || {}; var w = wear || p.wearing || {}; return OM.animalSVG(p.avatar || 'otter', { role: 'avatar', size: size, mood: mood, wear: w, tier: tier(p), real: realFor(p) }); }
   function baddie(p) { p = p || App.profile || {}; return OM.BADDIES[p.baddie] || OM.BADDIES.cat; }
   function kingName(cap, p) { var t = baddie(p).title; return cap ? t.charAt(0).toUpperCase() + t.slice(1) : t; }
-  function kingSVG(size, p) { return OM.animalSVG(baddie(p).id, { role: 'king', size: size, tier: tier(p) }); }
+  function kingSVG(size, p) { return OM.animalSVG(baddie(p).id, { role: 'king', size: size, tier: tier(p), real: realFor(p) }); }
   function guardName(r, p) { var b = baddie(p); return (b.guards && b.guards[r.id]) || r.guard || 'The guard'; }
   function guardSVG(r, size, p) {
     var b = baddie(p), gi = CUR(p).regions.indexOf(r), t = tier(p);
-    if (b.id !== 'cat') return OM.animalSVG(b.id, { role: 'guard', colour: r.color, size: size, tier: t });
+    if (b.id !== 'cat') return OM.animalSVG(b.id, { role: 'guard', colour: r.color, size: size, tier: t, real: realFor(p) });
     var fur = OM.GUARD_FURS[Math.max(0, gi) % OM.GUARD_FURS.length];
-    return OM.animalSVG('cat', { role: 'guard', fur: fur[0], dark: fur[1], colour: r.color, size: size, tier: t });
+    return OM.animalSVG('cat', { role: 'guard', fur: fur[0], dark: fur[1], colour: r.color, size: size, tier: t, real: realFor(p) });
   }
-  function avatarPicker(sel, bad) {
+  // real: draw the choices in the child's own look (life-like for Years 7 to 11)
+  function avatarPicker(sel, bad, real) {
     return '<div class="picker">' + OM.AVATARS.map(function (a) {
       var ok = OM.avatarAllowed(a.id, bad);
       return '<label class="pick' + (ok ? '' : ' off') + '"><input type="radio" name="avatar" value="' + a.id + '"' + (a.id === sel ? ' checked' : '') + (ok ? '' : ' disabled') + '>' +
-        OM.animalSVG(a.id, { size: 62 }) + '<span>' + a.name + '</span></label>';
+        OM.animalSVG(a.id, { size: 62, real: real || 0 }) + '<span>' + a.name + '</span></label>';
     }).join('') + '</div><p class="small-note pick-note"></p>';
   }
-  function baddiePicker(sel) {
+  function baddiePicker(sel, real) {
     return '<div class="picker wide">' + Object.keys(OM.BADDIES).map(function (id) {
       var b = OM.BADDIES[id];
-      return '<label class="pick"><input type="radio" name="baddie" value="' + id + '"' + (id === sel ? ' checked' : '') + '>' + OM.animalSVG(id, { role: 'king', size: 62 }) + '<span>' + b.short + '</span></label>';
+      return '<label class="pick"><input type="radio" name="baddie" value="' + id + '"' + (id === sel ? ' checked' : '') + '>' + OM.animalSVG(id, { role: 'king', size: 62, real: real || 0 }) + '<span>' + b.short + '</span></label>';
     }).join('') + '</div>';
   }
   // keep the two pickers fair: the baddie's animal cannot also be the player's animal
@@ -129,7 +132,7 @@
       (opts.noBack ? '<span></span>' : '<button class="hbtn" data-act="back" aria-label="Back">' + I('back', { size: 26, stroke: 2.5 }) + '</button>') +
       '<h1><span class="brandmini" title="' + OM.APP_NAME + '">' + OM.logoMark({ size: 34, decorative: true }) + '</span>' + (opts.icon ? I(opts.icon, { size: 26 }) : '') + '<span>' + title + '</span></h1>' +
       '<div class="hright">' + soundBtn() + (p ? '<div class="hstats"><span title="Feathers">' + I('feather', { size: 20 }) + '<b class="stat-f">' + p.feathers + '</b><span class="sr">feathers</span></span><span title="Acorns">' + I('acorn', { size: 20 }) + '<b class="stat-a">' + p.acorns + '</b><span class="sr">acorns</span></span></div>' : '') +
-        (p ? '<button class="hbtn pbtn" data-act="switchPlayer" title="Change player" aria-label="Change player (now ' + esc(p.name) + ')">' + OM.animalSVG(p.avatar || 'otter', { size: 30, tier: tier(p) }) + '<span class="pname">' + esc(p.name) + '</span>' + I('swap', { size: 18, stroke: 2.4 }) + '</button>' : '') + '</div>' +
+        (p ? '<button class="hbtn pbtn" data-act="switchPlayer" title="Change player" aria-label="Change player (now ' + esc(p.name) + ')">' + OM.animalSVG(p.avatar || 'otter', { size: 30, tier: tier(p), real: realFor(p), wear: p.wearing }) + '<span class="pname">' + esc(p.name) + '</span>' + I('swap', { size: 18, stroke: 2.4 }) + '</button>' : '') + '</div>' +
       '</header>';
   }
   // Keep maths readable when lines wrap: a number stays with its unit ("5 cm"), short sums stay on one line ("1,093 + 155").
@@ -358,6 +361,29 @@
   };
 
   // ---------- MAP: each year has its own adventure (js/worlds.js) ----------
+  // Pip's Trick Box as a treasure chest in the bottom corner of every map (clear of the clearings on every layout):
+  // the lid lifts and sparkles while there are tricks in it without a star
+  function trickChest(p) {
+    if (!OM.CURRICULUM.YTR) return '';
+    var objs = OM.tricksFor(yearOf(p)), got = objs.filter(function (o) { return S.stars(p, o.id) > 0; }).length, X = 885, Y = 548, open = got < objs.length;
+    return '<g class="node chest' + (open ? ' shiny' : '') + '" data-act="tricks" tabindex="0" role="button" aria-label="Pip’s Trick Box: ' + got + ' of ' + objs.length + ' tricks with a star">' +
+      '<circle class="halo" cx="' + X + '" cy="' + (Y - 6) + '" r="74" fill="url(#glowGold)"/>' +
+      '<g transform="translate(' + X + ' ' + Y + ')">' +
+      // the box: wood planks, gold bands and a lock
+      '<path class="ring" d="M-44 -4 H44 V30 Q44 36 38 36 H-38 Q-44 36 -44 30 Z" fill="#8a5a2b" stroke="#3b230f" stroke-width="4" stroke-linejoin="round"/>' +
+      '<path d="M-44 12 H44" stroke="#6e4520" stroke-width="2.5"/><path d="M-30 -4 V36 M30 -4 V36" stroke="#e8b33a" stroke-width="7"/>' +
+      '<rect x="-8" y="0" width="16" height="18" rx="3" fill="#f2c650" stroke="#3b230f" stroke-width="2.5"/><circle cx="0" cy="8" r="2.6" fill="#3b230f"/><path d="M0 9 V14" stroke="#3b230f" stroke-width="2.4" stroke-linecap="round"/>' +
+      // gold and light spilling out under the lid
+      '<path d="M-38 -6 Q0 -20 38 -6 Z" fill="#ffd56b"/><circle cx="-14" cy="-10" r="5" fill="#ffe9a6"/><circle cx="6" cy="-12" r="6" fill="#ffc53d"/><circle cx="22" cy="-9" r="4.5" fill="#ffe9a6"/>' +
+      // the lid, propped open
+      '<g class="lid"><path d="M-46 -6 Q-46 -40 0 -44 Q46 -40 46 -6 Z" transform="rotate(-14 -46 -6)" fill="#9c6630" stroke="#3b230f" stroke-width="4" stroke-linejoin="round"/>' +
+      '<path d="M-31 -9 Q-31 -38 -16 -42 M29 -9 Q29 -36 14 -42" transform="rotate(-14 -46 -6)" stroke="#e8b33a" stroke-width="7" fill="none"/></g>' +
+      '<g class="sparks"><path d="M-30 -50 l3 -8 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 Z" fill="#fff4c2"/><path d="M26 -46 l2 -6 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 Z" fill="#fff4c2"/><path d="M0 -62 l2 -5 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 Z" fill="#fff4c2"/></g>' +
+      '</g>' +
+      '<rect class="lab" x="' + (X - 84) + '" y="' + (Y + 46) + '" width="168" height="48" rx="24" fill="#0e2a2f" fill-opacity=".92"/>' +
+      '<text x="' + X + '" y="' + (Y + 67) + '" font-family="Fredoka, sans-serif" font-size="18" font-weight="600" text-anchor="middle" fill="#ffd56b">Pip’s Trick Box</text>' +
+      '<text x="' + X + '" y="' + (Y + 86) + '" font-family="Lexend, sans-serif" font-size="13" text-anchor="middle" fill="#a9c4bd">★ ' + got + ' of ' + objs.length + ' tricks</text></g>';
+  }
   function mapIcon(name, x, y, s, colour) { return '<g style="color:' + colour + '">' + I(name, { size: s, stroke: 2.2 }).replace('<svg ', '<svg x="' + (x - s / 2) + '" y="' + (y - s / 2) + '" ') + '</g>'; }
   Screens.map = function (pr) {
     var p = App.profile, W = WORLD(), regs = CUR().regions, N = regs.length, NODES = OM.mapNodes(N), GATE = OM.MAP_GATE;
@@ -399,6 +425,7 @@
       (walk ? '<path class="walklit" d="' + d([from, to]) + '" fill="none" stroke="#ffc53d" stroke-width="22" stroke-linecap="round" opacity=".45" filter="url(#soft)"/><path class="walklit" d="' + d([from, to]) + '" fill="none" stroke="#ffd56b" stroke-width="' + (older ? 6 : 5) + '" stroke-linecap="round"/>' : '') +
       (!tabs ? '' : '<g class="node" data-act="tables" tabindex="0" role="button" aria-label="Tables Tree"><circle class="halo" cx="470" cy="575" r="60" fill="url(#glowDim)"/><circle class="ring" cx="470" cy="575" r="36" fill="#22505a" stroke="#0e2a2f" stroke-width="5"/>' + mapIcon('tree', 470, 575, 36, '#ffc53d') +
       '<rect x="410" y="619" width="120" height="30" rx="15" fill="#0e2a2f" fill-opacity=".9"/><text x="470" y="635" font-family="Fredoka, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#fff">Tables Tree</text></g>') +
+      trickChest(p) +
       '<g class="node' + (beaten >= N ? ' lit' : '') + '" data-act="gate" tabindex="0" role="button" aria-label="' + W.gate + '"><circle class="halo" cx="' + GATE[0] + '" cy="' + GATE[1] + '" r="90" fill="url(#' + (beaten >= N ? 'glowGold' : 'glowDim') + ')"/>' +
       '<path class="ring" d="M845 165V70l20-22 20 22V40h40v30l20-22 20 22v95z" fill="#2b1f33" stroke="' + (beaten >= N ? '#ffc53d' : '#0e2a2f') + '" stroke-width="5" stroke-linejoin="round"/><rect x="882" y="100" width="46" height="65" rx="23" fill="#120d16"/>' +
       '<g transform="translate(875 88)">' + kingSVG(60).replace('<svg ', '<svg x="0" y="0" ') + '</g>' +
@@ -942,7 +969,7 @@
     var own = OM.tierForYear(yearOf(p)), cur = tier(p);
     return '<div class="picker wide">' + OM.TIERS.filter(function (t) { return OM.tierIndex(t.id) <= OM.tierIndex(own); }).map(function (t) {
       return '<label class="pick"><input type="radio" name="look" value="' + t.id + '"' + (t.id === cur ? ' checked' : '') + '>' +
-        OM.animalSVG(p.avatar || 'otter', { size: 62, tier: t.id }) + '<span>' + t.name + (t.id === own ? ' <small class="muted">(Year ' + yearOf(p) + ')</small>' : '') + '</span></label>';
+        OM.animalSVG(p.avatar || 'otter', { size: 62, tier: t.id, real: t.id === 'pro' ? Math.min(1, Math.max(0.2, (yearOf(p) - 6) / 5)) : 0 }) + '<span>' + t.name + (t.id === own ? ' <small class="muted">(Year ' + yearOf(p) + ')</small>' : '') + '</span></label>';
     }).join('') + '</div>';
   }
   Screens.team = function () {
@@ -950,11 +977,11 @@
     mount(header('Characters', { icon: 'user' }) + '<main class="team"><div class="card preview teamview"><div class="duo">' + avatar(120, null, 'cheer') + owl('happy', 140) + '</div>' +
       '<p class="vs">against</p>' + kingSVG(110) + '<p class="small-note">Changes save straight away. Your stars, feathers and acorns are kept.</p></div>' +
       '<form class="card form" id="who" onsubmit="return false">' +
-      '<fieldset><legend>Your animal</legend>' + avatarPicker(p.avatar || 'otter', p.baddie || 'cat') + '</fieldset>' +
+      '<fieldset><legend>Your animal</legend>' + avatarPicker(p.avatar || 'otter', p.baddie || 'cat', realFor(p)) + '</fieldset>' +
       (OM.tierForYear(yearOf(p)) !== 'little' ? '<fieldset><legend>Your look</legend><p class="small-note">Your characters grow up as you move up the school years. You can keep an earlier look if you like it better.</p>' + lookPicker(p) + '</fieldset>' : '') +
       (OM.canSpeak() && OM.voices().length ? '<fieldset><legend>' + esc(owlName()) + '’s voice</legend><p class="small-note">This is your own voice choice; other explorers can pick a different one.</p><div class="row"><select name="pipvoice" class="ans">' + OM.voices().map(function (v) { return '<option value="' + esc(v.id) + '"' + (v.id === OM.currentVoiceId() ? ' selected' : '') + '>' + esc(v.name) + ' (' + v.accent + ')</option>'; }).join('') + '</select><button type="button" class="btn small ghost" data-act="hearvoice">' + I('speaker', { size: 20 }) + 'Hear it</button></div></fieldset>' : '') +
       '<fieldset><legend>' + esc(owlName()) + '’s colour</legend>' + owlColourPicker(p.colour || 'brown') + '</fieldset>' +
-      '<fieldset><legend>The baddie</legend><p class="small-note">The guards change to match. Guards you have already beaten stay beaten.</p>' + baddiePicker(p.baddie || 'cat') + '</fieldset></form></main>', { hearvoice: function () { OM.say('Hoo hoo! What is 7 times 8?', { force: true }); } });
+      '<fieldset><legend>The baddie</legend><p class="small-note">The guards change to match. Guards you have already beaten stay beaten.</p>' + baddiePicker(p.baddie || 'cat', realFor(p)) + '</fieldset></form></main>', { hearvoice: function () { OM.say('Hoo hoo! What is 7 times 8?', { force: true }); } });
     var who = doc.getElementById('who');
     syncPickers(who);
     who.addEventListener('change', function (e) {

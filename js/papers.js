@@ -99,8 +99,9 @@
     });
     return (gcseBuilt[key] = out);
   };
-  // Higher-tier-only GCSE topics are shown only to children whose tier is set to Higher
-  OM.objVisible = function (o, profile) { return (o.tier !== 'H' || !!(profile && profile.tier === 'higher')) && (o.from === undefined || ((profile && profile.year) || 4) >= o.from); };
+  // Higher-tier-only GCSE topics are shown only to children whose tier is set to Higher; tricks (Trick Box) only for the
+  // child's own year and the four years before (OM.trickInReach)
+  OM.objVisible = function (o, profile) { var y = (profile && profile.year) || 4; if (o.year === 'TR' && OM.trickInReach) return OM.trickInReach(o, y); return (o.tier !== 'H' || !!(profile && profile.tier === 'higher')) && (o.from === undefined || y >= o.from); };
   OM.regionObjectives = function (regionId, year, profile) {
     var c = OM.CURRICULUM['Y' + (year || 4)] || OM.CURRICULUM.Y4;
     var reg = c.regions.filter(function (r) { return r.id === regionId; })[0];

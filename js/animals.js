@@ -126,6 +126,8 @@
   /* OM.animalSVG(kind, { role: 'avatar' | 'king' | 'guard', size, mood: 'happy' | 'cheer', colour (guard tunic), fur, dark }) */
   OM.animalSVG = function (kind, o) {
     o = o || {};
+    // Years 7 to 11: a more life-like drawing (js/animals-real.js), more so each year, for the player and the baddies
+    if (o.real && OM.naturalAnimal) return OM.naturalAnimal(kind, o);
     var sp = SPECIES[kind] || SPECIES.otter, role = o.role || 'avatar', size = o.size || 120;
     var c = (role === 'avatar' ? sp.c : BADDIE_COLOURS[kind] || sp.c).slice();
     if (o.fur) c[0] = o.fur; if (o.dark) c[1] = o.dark;

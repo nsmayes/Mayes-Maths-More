@@ -56,7 +56,16 @@
     if (/coordinate|\(\s*−?\d+\s*,/.test(text) && k === 'multi') set.push(',');
     return ORDER.filter(function (x) { return set.indexOf(x) >= 0; });
   };
+  // the letters (variables) a question uses, for the keypad: x and y, plus any single letters in the question
+  W.lettersFor = function (q) {
+    var text = (String((q && q.prompt) || '') + ' ' + String((q && q.input && q.input.placeholder) || '')).replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' '), out = 'xy';
+    var m, re = /(^|[^A-Za-z])([a-z])(?![A-Za-z])/g;
+    while ((m = re.exec(text))) { var c = m[2]; if (c === 'a' && !/[\d+\-−=×(]\s*a|a\s*[\d+\-−=×²)]/.test(text)) continue; if (out.indexOf(c) < 0) out += c; }
+    return out.slice(0, 8);
+  };
+  // on phones and tablets the keypad's Symbols tab does this job, so the bar is left out
   function symbarHTML(keys) {
+    if (W.keypadOn()) return '';
     return '<div class="symbar" aria-label="Insert a symbol">' + keys.map(function (k) { var d = SYM[k]; return '<button type="button" class="sym' + (d[0].length > 1 ? ' wide' : '') + '" data-sym="' + OM.esc(d[1]) + '" title="' + d[2] + '" aria-label="' + d[2] + '">' + d[0] + '</button>'; }).join('') + '</div>';
   }
 
@@ -191,6 +200,14 @@
       ctl.get = function () { return { lines: Array.prototype.map.call(box.querySelectorAll('input.wl'), function (e) { return e.value; }), answer: val(box, 'input.fa') }; };
     }
 
+    // for the on-screen keypad's Symbols tab: the symbols this question can need and the letters it uses
+    var letters = W.lettersFor(q);
+    box.querySelectorAll('input.ans').forEach(function (f) {
+      var kk = f.getAttribute('data-keys');
+      if (kk !== 'algebra' && kk !== 'working') return;
+      if (!f.hasAttribute('data-syms')) f.setAttribute('data-syms', W.symbolsFor(q, f.classList.contains('wl')).join('|'));
+      if (kk === 'algebra' && !f.hasAttribute('data-letters')) f.setAttribute('data-letters', letters);
+    });
     ctl.disable = function () { box.classList.add('locked'); box.querySelectorAll('input,select').forEach(function (e) { e.disabled = true; }); box.querySelectorAll('button').forEach(function (b) { b.disabled = true; }); };
     ctl.focus = ctl.focus || function () { var f = box.querySelector('input,select'); if (f && !W.keypadOn()) f.focus(); };
     // Enter with an answer box still empty moves to the next empty box (like Tab) instead of marking a half-finished answer.
@@ -234,34 +251,59 @@
     }
   };
 
-  // ---------- On-screen keypad ----------
+  // ---------- On-screen keypad (phones and tablets) ----------
+  // Number answers get one small page of keys. Answers that need symbols (working lines, algebra) get two tabs:
+  // "123" (the digits) and "Symbols" (every symbol that question can need, and the letters it uses). The page scrolls
+  // so the box being typed in always sits just above the keypad, and the working stays in view.
+  var NUMS = ['7', '8', '9', '4', '5', '6', '1', '2', '3'];
   var KEYS = {
-    digits: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0'],
-    signed: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '−', '0'],
-    signdec: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '−', '.', '0'],
-    decimal: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0'],
-    money: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '£', 'p'],
-    time: ['7', '8', '9', '4', '5', '6', '1', '2', '3', ':', '0', ' am', ' pm'],
-    roman: ['I', 'V', 'X', 'L', 'C'],
-    working: ['7', '8', '9', '+', '4', '5', '6', '−', '1', '2', '3', '×', '0', '.', '=', '÷'],
-    algebra: ['7', '8', '9', 'x', 'y', '4', '5', '6', 'a', 'n', '1', '2', '3', '+', '−', '0', '.', '²', '(', ')', '×', '÷', '<', '>', '=']
+    digits: ['0'], signed: ['−', '0'], signdec: ['−', '0', '.'], decimal: ['0', '.'],
+    money: ['0', '.', '£', 'p'], time: ['0', ':', ' am', ' pm'], roman: null
   };
-  var pad = null, target = null;
+  var ROMAN = ['I', 'V', 'X', 'L', 'C', 'D', 'M'];
+  // symbols always on the Symbols tab for working lines and algebra, before the ones a question adds
+  var BASE_SYMS = ['+', '−', '×', '÷', '=', '(', ')', '/', '²', '^', '√'];
+  var LABEL = { '²': 'x²', '³': 'x³', '^': 'xⁿ', 'std': '×10ⁿ' };
+  var pad = null, target = null, tab = 'num';
   function buildPad() {
     pad = doc.createElement('div'); pad.className = 'keypad hidden'; pad.setAttribute('aria-hidden', 'true');
     doc.body.appendChild(pad);
     pad.addEventListener('mousedown', function (e) { e.preventDefault(); });
     pad.addEventListener('touchstart', function (e) { if (e.target.closest('button')) e.preventDefault(); }, { passive: false });
-    pad.addEventListener('touchend', function (e) { var b = e.target.closest('button'); if (b) { e.preventDefault(); press(b.getAttribute('data-k')); } });
-    pad.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) press(b.getAttribute('data-k')); });
+    pad.addEventListener('touchend', function (e) { var b = e.target.closest('button'); if (b) { e.preventDefault(); press(b); } });
+    pad.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) press(b); });
   }
-  function press(k) {
+  function key(k, cls, label) { return '<button type="button" class="' + (cls || '') + '" data-k="' + OM.esc(k) + '">' + (label || OM.esc(k.trim())) + '</button>'; }
+  // the symbols and letters this box needs, worked out when the question was drawn (data-syms, data-letters)
+  function symbolsOf(el) {
+    var list = BASE_SYMS.concat((el.getAttribute('data-syms') || '').split('|').filter(Boolean));
+    return ORDER.filter(function (k) { return list.indexOf(k) >= 0; }).concat(list.filter(function (k) { return ORDER.indexOf(k) < 0 && SYM[k]; }));
+  }
+  function draw() {
+    var kind = target.getAttribute('data-keys') || 'digits', tabs = kind === 'algebra' || kind === 'working', body;
+    if (kind === 'roman') body = '<div class="kp-grid c4">' + ROMAN.map(function (k) { return key(k); }).join('') + '</div>';
+    else if (tabs && tab === 'sym') {
+      var letters = (target.getAttribute('data-letters') || '').split('').filter(Boolean), syms = symbolsOf(target);
+      if (kind === 'working') syms = ['+', '−', '×', '÷', '=', '(', ')'].concat(syms.filter(function (k) { return ['+', '−', '×', '÷', '=', '(', ')'].indexOf(k) < 0; }));
+      body = '<div class="kp-grid sym">' + letters.map(function (k) { return key(k, 'let'); }).join('') +
+        syms.map(function (k) { var d = SYM[k] || [k, k, k]; return '<button type="button" class="sy' + ((LABEL[k] || d[0]).length > 2 ? ' wide' : '') + '" data-k="' + OM.esc(d[1]) + '" aria-label="' + OM.esc(d[2]) + '">' + (LABEL[k] || d[0]) + '</button>'; }).join('') + '</div>';
+    } else {
+      var extra = tabs ? ['−', '0', '.'] : KEYS[kind] || KEYS.digits;
+      body = '<div class="kp-grid num">' + NUMS.map(function (k) { return key(k); }).join('') + extra.map(function (k) { return key(k, k.length > 1 ? 'small' : ''); }).join('') + '</div>';
+    }
+    pad.innerHTML = (tabs ? '<div class="kp-tabs" role="tablist">' + key('#num', tab === 'num' ? 'on' : '', '123') + key('#sym', tab === 'sym' ? 'on' : '', 'Symbols' + (target.getAttribute('data-letters') ? ' and letters' : '')) + '</div>' : '') +
+      '<div class="kp-row">' + body + '<div class="kp-side">' + key('#back', 'kb', '⌫') + key('#next', 'kn', 'Next box') + key('#hide', 'kh', 'Done') + '</div></div>';
+    pad.setAttribute('aria-hidden', 'false');
+  }
+  function press(b) {
+    var k = b.getAttribute('data-k');
     if (!target) return;
     OM.sfx.tap();
-    if (k === 'hide') { hide(); return; }
-    if (k === 'next') { var all = Array.prototype.slice.call(doc.querySelectorAll('input.ans:not([disabled])')), i = all.indexOf(target); if (all[i + 1]) all[i + 1].focus(); else hide(); return; }
+    if (k === '#num' || k === '#sym') { tab = k.slice(1); draw(); room(); return; }
+    if (k === '#hide') { hide(); return; }
+    if (k === '#next') { var all = Array.prototype.slice.call(doc.querySelectorAll('input.ans:not([disabled])')), i = all.indexOf(target); if (all[i + 1]) all[i + 1].focus(); else hide(); return; }
     var s = target.selectionStart === null || target.selectionStart === undefined ? target.value.length : target.selectionStart, e2 = target.selectionEnd === null || target.selectionEnd === undefined ? s : target.selectionEnd;
-    if (k === 'back') {
+    if (k === '#back') {
       if (s === e2 && s > 0) s--;
       target.value = target.value.slice(0, s) + target.value.slice(e2);
     } else {
@@ -273,15 +315,25 @@
     try { target.setSelectionRange(s, s); } catch (err) { /* some inputs do not support selection */ }
     target.dispatchEvent(new Event('input', { bubbles: true }));
   }
+  // leave room under the page for the keypad, and bring the box being typed in into view just above it
+  function room() {
+    if (!pad || !target) return;
+    var h = pad.offsetHeight;
+    doc.body.style.paddingBottom = (h + 16) + 'px'; doc.body.style.setProperty('--padh', h + 'px');
+    var r = target.getBoundingClientRect(), view = G.innerHeight - h, topBar = 76;
+    if (r.bottom > view - 12 || r.top < topBar) G.scrollBy({ top: r.top - Math.max(topBar, view - r.height - (view - topBar) * 0.45), behavior: 'smooth' });
+  }
   function show(inputEl) {
     if (!pad) buildPad();
+    if (target !== inputEl && (!target || target.getAttribute('data-keys') !== inputEl.getAttribute('data-keys'))) tab = 'num';
     target = inputEl;
-    var set = KEYS[inputEl.getAttribute('data-keys')] || KEYS.digits;
-    pad.innerHTML = '<div class="keys k' + set.length + '">' + set.map(function (k) { return '<button type="button" data-k="' + k + '">' + k.trim() + '</button>'; }).join('') +
-      '</div><div class="keys-side"><button type="button" data-k="back" class="kb">⌫</button><button type="button" data-k="next" class="kn">Next box</button><button type="button" data-k="hide" class="kh">Done</button></div>';
+    draw();
     pad.classList.remove('hidden'); doc.body.classList.add('pad-open');
+    // on a phone the calculator slides up from the bottom too: only one of them at a time
+    if (OM.calc && OM.calc.isOpen && OM.calc.isOpen() && G.matchMedia && G.matchMedia('(max-width: 700px)').matches) OM.calc.close();
+    G.requestAnimationFrame(room);
   }
-  function hide() { if (pad) pad.classList.add('hidden'); doc.body.classList.remove('pad-open'); target = null; }
+  function hide() { if (pad) { pad.classList.add('hidden'); pad.setAttribute('aria-hidden', 'true'); } doc.body.classList.remove('pad-open'); doc.body.style.paddingBottom = ''; doc.body.style.removeProperty('--padh'); target = null; }
   W.hideKeypad = hide;
   if (doc) doc.addEventListener('focusin', function (e) {
     var t = e.target;

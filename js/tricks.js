@@ -1,7 +1,8 @@
 /* Mayes Maths & More — Pip's Trick Box: mental maths shortcuts, e.g. "× 19 is × 20, then take away one lot".
-   Its own section (like the 11+ Training Camp), open to every year: each trick has a "from" year and is shown
-   from that year on. Every trick has lesson slides with a looping animation of the trick, practice at three levels
-   whose worked solutions use the trick, and an independent check of every answer. A speed round mixes them. */
+   Its own section (like the 11+ Training Camp), opened from the treasure chest on every year's map: each trick has a
+   "from" year, and a child sees the tricks from their own year and the four years before. Every trick has lesson
+   slides with a looping animation of the trick, practice at three levels whose worked solutions use the trick, and an
+   independent check of every answer. A speed round mixes them. */
 (function (G) {
   'use strict';
   var OM = G.OM, V = OM.V, K = OM.kit, C = V.colors, fmt = OM.fmt;
@@ -316,7 +317,100 @@
         return K.money('A pen costs <b>' + OM.pounds(price) + '</b>. How much do <b>' + n + '</b> pens cost?', total, '£', { hint: 'Each costs ' + off + 'p less than £' + (p + 1) + '.', params: { items: [[price, n]] },
           sol: sol([OM.pounds(price) + ' is ' + off + 'p less than £' + (p + 1) + '.', n + ' × £' + (p + 1) + ' = £' + n * (p + 1) + '.', 'Take off ' + off + 'p for each one: ' + n + ' × ' + off + 'p = ' + n * off + 'p. £' + n * (p + 1) + ' − ' + n * off + 'p = ' + OM.pounds(total) + '.']) });
       },
-      verify: function (q) { var t = 0; q.params.items.forEach(function (it) { for (var i = 0; i < it[1]; i++) t += it[0]; }); return q.check.pence === t; } }
+      verify: function (q) { var t = 0; q.params.items.forEach(function (it) { for (var i = 0; i < it[1]; i++) t += it[0]; }); return q.check.pence === t; } },
+
+    { id: 'TR-19', from: 7, title: 'Swap the percentage', statement: 'Find an awkward percentage of a friendly number by swapping them round: x% of y is the same as y% of x',
+      vocab: ['percent', 'swap', 'multiply in any order'],
+      say: ['8% of 25 looks hard. But <b>x% of y is always the same as y% of x</b>, so swap them: 25% of 8 is a quarter of 8, which is 2.', 'It works because x% of y means x × y ÷ 100, and you can multiply in either order.', 'Look for a friendly number such as 50, 25, 20 or 75, and make it the percentage.'],
+      demo: ['Watch: 16% of 25. Swap them round.', function () { return flow('16% of 25', [['swap: x% of y = y% of x', '25% of 16'], ['25% is a quarter', '16 ÷ 4 = 4']]); }],
+      method: ['Spot which number is friendly as a percentage (50, 25, 20, 75…).', 'Swap: make the friendly number the percentage.', 'Work out that easier percentage.'], mistakes: ['Swapping, then forgetting to change which number is the percentage.', 'Thinking the answer changes when you swap.'],
+      make: function (r, L) {
+        var y = L === 1 ? 50 : L === 2 ? 25 : r.pick([20, 75]), unit = y === 50 ? 2 : y === 20 ? 5 : 4, xv = unit * r.int(2, 24);
+        if (xv === y) xv += unit;
+        var ans = xv * y / 100;
+        var how = y === 50 ? 'half of ' + xv + ' is ' + fmt(ans) : y === 25 ? 'a quarter of ' + xv + ' is ' + fmt(ans) : y === 20 ? 'a fifth of ' + xv + ' is ' + fmt(ans) : 'a quarter of ' + xv + ' is ' + xv / 4 + ', so three quarters is ' + fmt(ans);
+        return K.int('Work out <b>' + xv + '% of ' + y + '</b> in your head.', ans, { hint: 'Swap them round: ' + xv + '% of ' + y + ' is the same as ' + y + '% of ' + xv + '.', params: { x: xv, y: y },
+          sol: sol([xv + '% of ' + y + ' is the same as ' + y + '% of ' + xv + '.', y + '% is a friendly percentage: ' + how + '.', 'So ' + xv + '% of ' + y + ' = ' + fmt(ans) + '.']) });
+      },
+      verify: function (q) { var p = q.params; return q.check.value * 100 === p.x * p.y; } },
+
+    { id: 'TR-20', from: 8, title: 'Dividing by 0.5, 0.25 and 0.2', statement: 'Divide by 0.5, 0.25, 0.2 or 0.1 by multiplying by 2, 4, 5 or 10 instead',
+      vocab: ['divide', 'reciprocal', 'how many fit'],
+      say: ['Dividing by 0.5 asks <b>how many halves fit</b>. There are 2 halves in every 1, so <b>÷ 0.5 is the same as × 2</b>: 7 ÷ 0.5 = 14.', 'In the same way, ÷ 0.25 is × 4 (four quarters in 1), ÷ 0.2 is × 5 and ÷ 0.1 is × 10.', 'So dividing by a number less than 1 makes the answer <b>bigger</b>.'],
+      demo: ['Watch: 9 ÷ 0.25. Four quarters fit in every 1.', function () { return flow('9 ÷ 0.25', [['4 quarters in every 1, so ÷ 0.25 is × 4', '9 × 4'], ['multiply', '36']]); }],
+      method: ['Ask how many of the decimal fit into 1: 0.5 → 2, 0.25 → 4, 0.2 → 5, 0.1 → 10.', 'Multiply by that number instead of dividing.'], mistakes: ['Halving instead of doubling when dividing by 0.5.', 'Expecting the answer to be smaller.'],
+      make: function (r, L) {
+        var d = L === 1 ? '0.5' : L === 2 ? r.pick(['0.25', '0.1']) : r.pick(['0.2', '0.25', '0.125']), k = { '0.5': 2, '0.25': 4, '0.1': 10, '0.2': 5, '0.125': 8 }[d], n = r.int(3, L === 1 ? 49 : 30);
+        return K.int('Work out <b>' + n + ' ÷ ' + d + '</b> in your head.', n * k, { hint: 'How many lots of ' + d + ' fit into 1? Multiply by that.', params: { n: n, d: d },
+          sol: sol([k + ' lots of ' + d + ' make 1, so dividing by ' + d + ' is the same as multiplying by ' + k + '.', n + ' × ' + k + ' = ' + fmt(n * k) + '.']) });
+      },
+      verify: function (q) { var p = q.params; return q.check.value * K.th(p.d) === p.n * 1000; } },
+
+    { id: 'TR-21', from: 9, title: 'One multiplier for a percentage change', statement: 'Increase or decrease by a percentage in one step, by multiplying by a single decimal',
+      vocab: ['multiplier', 'increase', 'decrease'],
+      say: ['To <b>increase by 15%</b> you end up with 100% + 15% = 115% of the amount, so <b>multiply by 1.15</b>.', 'To <b>decrease by 15%</b> you keep 100% − 15% = 85%, so <b>multiply by 0.85</b>.', 'One multiplication does the whole job: no need to find the percentage and then add or take it away.'],
+      demo: ['Watch: increase 80 by 15%.', function () { return flow('80 increased by 15%', [['100% + 15% = 115%', '× 1.15'], ['80 × 1.15', '92']]); }],
+      method: ['Increase: add the percentage to 100%. Decrease: take it away from 100%.', 'Write that percentage as a decimal (÷ 100): this is the multiplier.', 'Multiply the amount by the multiplier.'], mistakes: ['Using 0.15 to increase by 15% (that only finds the 15%).', 'Writing 1.5 for a 5% increase instead of 1.05.'],
+      make: function (r, L) {
+        var up = L === 2 ? false : L === 1 ? true : r.chance(0.5), p = r.pick(L === 3 ? [15, 35, 5, 12, 40] : [10, 20, 5, 30, 25, 3]), m = up ? 100 + p : 100 - p, ms = dstr(m * 10);
+        if (L < 3) return K.dec('What single number do you multiply by to <b>' + (up ? 'increase' : 'decrease') + ' an amount by ' + p + '%</b>?', ms, { hint: (up ? '100% + ' : '100% − ') + p + '% = ' + m + '%. Write it as a decimal.', params: { up: up, p: p, k: 'm' },
+          sol: sol([(up ? 'After the increase you have 100% + ' : 'After the decrease you have 100% − ') + p + '% = ' + m + '% of the amount.', m + '% as a decimal is ' + m + ' ÷ 100 = ' + ms + '.', 'So the multiplier is ' + ms + '.']) });
+        var A = r.int(2, 30) * (p % 5 ? 25 : 20), ans = A * m / 100;
+        return K.int('A price of <b>£' + fmt(A) + '</b> ' + (up ? 'goes up' : 'goes down') + ' by <b>' + p + '%</b>. Use a single multiplier to find the new price, in pounds.', ans, { prefix: '£', hint: 'The multiplier is ' + ms + '.', params: { up: up, p: p, A: A, k: 'a' },
+          sol: sol(['The multiplier is ' + (up ? '100% + ' : '100% − ') + p + '% = ' + m + '% = ' + ms + '.', '£' + fmt(A) + ' × ' + ms + ' = £' + fmt(ans) + '.']) });
+      },
+      verify: function (q) { var p = q.params, m = p.up ? 100 + p.p : 100 - p.p; return p.k === 'm' ? K.th(q.check.value) === m * 10 : q.check.value * 100 === p.A * m; } },
+
+    { id: 'TR-22', from: 10, title: 'Reverse percentages: divide by the multiplier', statement: 'Find the original amount before a percentage change by dividing by the multiplier',
+      vocab: ['original', 'multiplier', 'reverse'],
+      say: ['A coat costs <b>£96 after a 20% rise</b>. What did it cost before? Do <b>not</b> take 20% off £96!', 'The new price is 120% of the old one, so new = old × 1.2. To go back, <b>divide by the multiplier</b>: £96 ÷ 1.2 = £80.', 'After a decrease it is the same idea: after 25% off, a price of £60 was £60 ÷ 0.75 = £80.'],
+      demo: ['Watch: £96 after a 20% increase.', function () { return flow('£96 after a 20% rise', [['new = old × 1.2', 'old = 96 ÷ 1.2'], ['divide by the multiplier', '£80']]); }],
+      method: ['Write the multiplier for the change (e.g. +20% → 1.2, −25% → 0.75).', 'Divide the new amount by the multiplier.', 'Check: multiply your answer by the multiplier to get back.'], mistakes: ['Taking the percentage off the new amount (£96 − 20%).', 'Multiplying instead of dividing.'],
+      make: function (r, L) {
+        var up = L === 1 ? true : L === 2 ? false : r.chance(0.5), p = r.pick(L === 3 ? [15, 5, 30, 40, 35] : [10, 20, 25, 50]), m = up ? 100 + p : 100 - p;
+        var O = r.int(2, 30) * 20, N = O * m / 100, ms = dstr(m * 10);
+        return K.int('After ' + (up ? 'an increase' : 'a decrease') + ' of <b>' + p + '%</b>, a price is <b>£' + fmt(N) + '</b>. What was the price before the change, in pounds?', O, { prefix: '£', hint: 'The multiplier is ' + ms + '. Divide £' + fmt(N) + ' by it.', params: { up: up, p: p, N: N },
+          sol: sol(['The new price is ' + m + '% of the old one, so new = old × ' + ms + '.', 'Go back by dividing: £' + fmt(N) + ' ÷ ' + ms + ' = £' + fmt(O) + '.', 'Check: £' + fmt(O) + ' × ' + ms + ' = £' + fmt(N) + '.']) });
+      },
+      verify: function (q) { var p = q.params; return q.check.value * (p.up ? 100 + p.p : 100 - p.p) === p.N * 100; } },
+
+    { id: 'TR-23', from: 10, title: 'Squaring numbers near 100', statement: 'Square a number close to 100 (or 1,000) by moving it to the round number, then adding the square of the distance',
+      vocab: ['square', 'distance', 'round number'],
+      say: ['97²: 97 is 3 below 100. <b>Take the 3 off again</b>: 97 − 3 = 94, so start with <b>9,400</b>. Then <b>add 3² = 9</b>: 97² = 9,409.', 'Above 100 it works the other way: 104² → 104 + 4 = 108 → 10,800, add 4² = 16: 10,816.', 'Why? n² = (n − d)(n + d) + d², and one of those brackets is the round number.'],
+      demo: ['Watch: 97². It is 3 below 100.', function () { return flow('97²', [['3 below 100: take 3 off again', '94 → 9,400'], ['add 3² = 9', '9,409']]); }],
+      method: ['Find how far the number is from 100 (or 1,000).', 'Move the number the same distance the other way, and multiply by 100 (or 1,000).', 'Add the square of the distance.'], mistakes: ['Taking away the square of the distance instead of adding it.', 'Moving towards 100 instead of away from it.'],
+      make: function (r, L) {
+        var R = L === 3 ? 1000 : 100, d = L === 1 ? r.int(1, 4) : r.int(1, L === 3 ? 12 : 9), below = L === 1 ? true : r.chance(0.5), n = below ? R - d : R + d, other = below ? n - d : n + d, ans = n * n;
+        return K.int('Work out <b>' + fmt(n) + '²</b> in your head.', ans, { hint: fmt(n) + ' is ' + d + (below ? ' below ' : ' above ') + fmt(R) + '. Work out ' + fmt(other) + ' × ' + fmt(R) + ', then add ' + d + '².', params: { n: n },
+          sol: sol([fmt(n) + ' is ' + d + (below ? ' below ' : ' above ') + fmt(R) + '.', 'Move ' + d + ' the other way: ' + fmt(other) + ', and multiply by ' + fmt(R) + ': ' + fmt(other * R) + '.', 'Add ' + d + '² = ' + d * d + ': ' + fmt(n) + '² = ' + fmt(ans) + '.']) });
+      },
+      verify: function (q) { var n = q.params.n; return q.check.value === n * n; } },
+
+    { id: 'TR-24', from: 11, title: 'Estimate with 1 significant figure', statement: 'Estimate a calculation quickly by rounding every number to 1 significant figure first',
+      vocab: ['estimate', 'significant figure', 'round'],
+      say: ['To estimate, <b>round every number to 1 significant figure</b> (its first non-zero digit), then work it out in your head.', '4.87 × 31.2 ≈ 5 × 30 = 150. 6.12 × 48.7 ÷ 2.03 ≈ 6 × 50 ÷ 2 = 150.', 'Dividing by a decimal: 3.9 × 21.4 ÷ 0.48 ≈ 4 × 20 ÷ 0.5 = 80 ÷ 0.5 = 160. Exam questions often ask for exactly this.'],
+      demo: ['Watch: estimate 4.87 × 31.2 ÷ 0.48.', function () { return flow('4.87 × 31.2 ÷ 0.48', [['round each to 1 s.f.', '5 × 30 ÷ 0.5'], ['work it out', '150 ÷ 0.5 = 300']]); }],
+      method: ['Round every number to 1 significant figure.', 'Multiply and divide the rounded numbers in your head.', 'Remember: dividing by 0.5 doubles, dividing by 0.2 multiplies by 5.'], mistakes: ['Rounding to the nearest whole number instead of 1 significant figure (0.48 is 0.5, not 0).', 'Working out the exact answer instead of the estimate.'],
+      make: function (r, L) {
+        // pick the rounded numbers first, then nudge each by less than would change its first significant figure
+        // (a in hundredths, b in tenths, c in hundredths: all whole numbers, so no rounding errors)
+        function off(max) { var o = 0; while (!o) o = r.int(-max, max); return o; }
+        var a1 = r.int(2, 9), b1 = r.int(2, 9) * 10, a = ((a1 * 100 + off(30)) / 100).toFixed(2), b = ((b1 * 10 + off(30)) / 10).toFixed(1);
+        if (L === 1) return K.int('Estimate <b>' + a + ' × ' + b + '</b> by rounding each number to 1 significant figure.', a1 * b1, { hint: 'Round: ' + a + ' → ' + a1 + ', ' + b + ' → ' + b1 + '.', params: { nums: [a, b] },
+          sol: sol(['Round each number to 1 significant figure: ' + a + ' → ' + a1 + ' and ' + b + ' → ' + b1 + '.', a1 + ' × ' + b1 + ' = ' + fmt(a1 * b1) + '.']) });
+        var c1, c, est;
+        if (L === 2) { c1 = r.pick([2, 3, 4, 5].filter(function (x) { return (a1 * b1) % x === 0; })); c = ((c1 * 100 + off(20)) / 100).toFixed(2); est = a1 * b1 / c1; }
+        else { c1 = r.pick(['0.5', '0.2']); c = ((+c1 * 100 + (r.chance(0.5) ? 1 : -1) * r.int(1, 2)) / 100).toFixed(2); est = a1 * b1 * (c1 === '0.5' ? 2 : 5); }
+        return K.int('Estimate <b>' + a + ' × ' + b + ' ÷ ' + c + '</b> by rounding each number to 1 significant figure.', est, { hint: 'Round: ' + a + ' → ' + a1 + ', ' + b + ' → ' + b1 + ', ' + c + ' → ' + c1 + '.', params: { nums: [a, b, c] },
+          sol: sol(['Round each number to 1 significant figure: ' + a + ' → ' + a1 + ', ' + b + ' → ' + b1 + ' and ' + c + ' → ' + c1 + '.', a1 + ' × ' + b1 + ' = ' + fmt(a1 * b1) + '.', fmt(a1 * b1) + ' ÷ ' + c1 + ' = ' + fmt(est) + '.']) });
+      },
+      verify: function (q) {
+        // round each number to 1 s.f. independently, in thousandths (whole numbers), then calculate
+        function sf1(s) { var t = K.th(s), p = 1; while (t >= p * 10) p *= 10; return Math.round(t / p) * p; }
+        var n = q.params.nums.map(sf1), v = n[0] * n[1];            // in millionths
+        if (n.length === 3) return q.check.value * n[2] * 1000 === v;  // value = n0 × n1 ÷ n2
+        return q.check.value * 1000000 === v;
+      } }
   ];
 
   // ---------- register: generators, then the Trick Box section ----------
@@ -335,8 +429,10 @@
   };
   OM.CURRICULUM.YTR = TR;
   objectives.forEach(function (ob) { ob.region = 'xt'; ob.year = 'TR'; OM.objectiveIndex[ob.id] = ob; });
-  // the tricks a child can see: those from their school year or earlier
-  OM.tricksFor = function (year) { return objectives.filter(function (o) { return o.from <= (year || 4); }); };
+  // the tricks in a child's chest: those from their own school year and the four years before it
+  OM.TRICK_YEARS = 4;
+  OM.trickInReach = function (o, year) { year = year || 4; return o.from <= year && o.from >= year - OM.TRICK_YEARS; };
+  OM.tricksFor = function (year) { return objectives.filter(function (o) { return OM.trickInReach(o, year); }); };
   // a speed round: 10 questions mixed from the child's tricks, the harder levels for older children
   OM.buildTrickTest = function (year, seed) {
     var objs = OM.tricksFor(year), r = OM.makeRng(seed), seen = {}, qs = [], pool = r.shuffle(objs.slice());
