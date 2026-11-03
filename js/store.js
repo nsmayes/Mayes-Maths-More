@@ -9,6 +9,73 @@
   // animations are on unless a grown-up has chosen otherwise (earlier versions followed the device setting by default)
   if (!data.settings.motionChosen) data.settings.motion = 'on';
 
+  // ---------- checking a child's record that came from another device ----------
+  // A file or set of QR codes could have been edited by hand, so the record is rebuilt from scratch: only the parts the
+  // app uses are kept, each one checked for its type and range. Text is shortened and loses < > " `; ids, years and
+  // choices must be ones the app knows; numbers must be numbers. This stops a crafted file from putting code into the
+  // page or breaking the app, whatever it contains.
+  var DAY = /^\d{4}-\d{2}-\d{2}$/, IDKEY = /^[\w:.+\-]{1,60}$/, own = Object.prototype.hasOwnProperty;
+  function txt(v, max) { return typeof v === 'string' ? v.replace(/[<>"`\u0000-\u001f\u007f]/g, '').trim().slice(0, max) : ''; }
+  function num(v, lo, hi, d) { v = Number(v); return typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; }
+  function int(v, lo, hi, d) { var n = num(v, lo, hi, d); return n === null || n === undefined ? n : Math.round(n); }
+  function key(v) { return typeof v === 'string' && IDKEY.test(v) && v !== '__proto__' && v !== 'constructor' && v !== 'prototype'; }
+  function keys(o) { return o && typeof o === 'object' && !Array.isArray(o) ? Object.keys(o).filter(key) : []; }
+  function list(a, max) { return Array.isArray(a) ? a.slice(-max) : []; }
+  function pick(v, ok, d) { return ok(v) ? v : d; }
+  function cleanChild(c) {
+    var o = {}, OMx = G.OM || {};
+    o.id = pick(c.id, function (v) { return typeof v === 'string' && /^[a-z0-9]{1,40}$/i.test(v); }, null) || newId();
+    o.name = txt(c.name, 30) || 'Explorer';
+    o.year = int(c.year, 1, 11, 4);
+    o.owlName = txt(c.owlName, 20) || 'Pip';
+    o.colour = OMx.OWL_COLOURS && own.call(OMx.OWL_COLOURS, c.colour) ? c.colour : 'brown';
+    o.avatar = (OMx.AVATARS || []).some(function (a) { return a.id === c.avatar; }) ? c.avatar : 'otter';
+    o.baddie = OMx.BADDIES && own.call(OMx.BADDIES, c.baddie) ? c.baddie : 'cat';
+    if ((OMx.TIERS || []).some(function (t) { return t.id === c.look; })) o.look = c.look;
+    if (c.tier === 'foundation' || c.tier === 'higher') o.tier = c.tier;
+    if ((OMx.EXAM_BOARDS || []).some(function (b) { return b.id === c.board; })) o.board = c.board;
+    if (typeof c.voice === 'string' && /^[\w:.\-+ ()]{1,100}$/.test(c.voice)) o.voice = c.voice;
+    if (c.rate !== undefined) o.rate = num(c.rate, 0.5, 2, 0.95);
+    if (/^\d{3}$/.test(String(c.code))) o.code = String(c.code);
+    if (typeof c.codeOn === 'boolean') o.codeOn = c.codeOn;
+    ['feathers', 'acorns', 'fixIts'].forEach(function (k) { o[k] = int(c[k], 0, 1e7, 0); });
+    ['introSeen', 'escaped'].forEach(function (k) { o[k] = !!c[k]; });
+    o.created = num(c.created, 0, 4e12, Date.now());
+    if (typeof c.lastBonus === 'string' && DAY.test(c.lastBonus)) o.lastBonus = c.lastBonus;
+    // outfits: ids like "hat:beanie:red", worn as { slot: "beanie:red" }
+    o.owned = list(c.owned, 600).filter(key);
+    o.wearing = {};
+    keys(c.wearing).forEach(function (s) { if (c.wearing[s] === null || key(c.wearing[s])) o.wearing[s] = c.wearing[s]; });
+    // progress on each topic the app knows
+    o.progress = {};
+    keys(c.progress).forEach(function (k) {
+      var p = c.progress[k]; if (!p || typeof p !== 'object' || (OMx.objectiveIndex && !OMx.objectiveIndex[k])) return;
+      var q = { level: int(p.level, 1, 3, 1), last: num(p.last, 0, 4e12, 0), lv: {} };
+      [1, 2, 3].forEach(function (L) { var l = p.lv && p.lv[L] || {}; q.lv[L] = { c: int(l.c, 0, 1e6, 0), a: int(l.a, 0, 1e6, 0), recent: list(l.recent, 10).map(function (x) { return x ? 1 : 0; }) }; q.lv[L].c = Math.min(q.lv[L].c, q.lv[L].a); });
+      o.progress[k] = q;
+    });
+    // the improvement tracker's day-by-day log (js/tracker.js): numbers only
+    o.log = {};
+    keys(c.log).filter(function (d) { return DAY.test(d); }).slice(-2000).forEach(function (d) {
+      var e = c.log[d]; if (!e || typeof e !== 'object') return;
+      var pair = function (v) { return Array.isArray(v) ? [int(v[0], 0, 1e6, 0), int(v[1], 0, 1e6, 0)] : [0, 0]; };
+      var x = { a: int(e.a, 0, 1e6, 0), c: int(e.c, 0, 1e6, 0), g: int(e.g, 0, 1e5, 0), ms: num(e.ms, 0, 864e5, 0), t: num(e.t, 0, 4e12, 0), L: {}, o: {}, gs: {} };
+      [1, 2, 3].forEach(function (L) { x.L[L] = pair(e.L && e.L[L]); });
+      keys(e.o).slice(0, 500).forEach(function (k) { x.o[k] = pair(e.o[k]); });
+      keys(e.gs).slice(0, 500).forEach(function (k) { x.gs[k] = int(e.gs[k], 0, 3, 0); });
+      o.log[d] = x;
+    });
+    var kinds = ['guard', 'quiz', 'paper', 'tricks', 'eleven'];
+    o.tests = list(c.tests, 2000).filter(function (t) { return t && typeof t === 'object' && kinds.indexOf(t.kind) >= 0; }).map(function (t) {
+      var x = { date: num(t.date, 0, 4e12, 0), year: int(t.year, 1, 11, o.year), kind: t.kind, score: num(t.score, 0, 1000, 0), max: num(t.max, 1, 1000, 1) };
+      ['paper', 'region', 'id', 'track'].forEach(function (k) { if (key(t[k])) x[k] = t[k]; });
+      return x;
+    });
+    o.mtc = list(c.mtc, 2000).filter(function (t) { return t && typeof t === 'object'; }).map(function (t) { return { date: num(t.date, 0, 4e12, 0), year: int(t.year, 1, 11, 4), score: int(t.score, 0, 25, 0) }; });
+    o.days = list(c.days, 4000).filter(function (d) { return typeof d === 'string' && DAY.test(d); });
+    ['guards', 'papers', 'escapedYears'].forEach(function (k) { o[k] = {}; keys(c[k]).forEach(function (g) { if (c[k][g] === true) o[k][g] = true; }); });
+    return o;
+  }
   // every explorer gets a different id, even two added in the same millisecond
   function newId() { var id; do { id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); } while (data.profiles.some(function (q) { return q.id === id; })); return id; }
   // repair any explorers saved with the same id by an earlier version
@@ -73,11 +140,14 @@
       var c = Store.get(id); if (!c) throw new Error('No such explorer');
       return { app: 'Mayes Maths & More', kind: 'child', v: 1, exported: new Date().toISOString(), child: JSON.parse(JSON.stringify(c)) };
     },
-    // read a file or QR message: one child, or every child in a full backup
+    // read a file or QR message: one child, or every child in a full backup. Each record is checked and rebuilt
+    // (cleanChild) before anything is shown or saved, because a file could have been edited by hand.
     childrenIn: function (obj) {
-      if (obj && obj.kind === 'child' && obj.child && obj.child.name) return [obj.child];
-      if (obj && Array.isArray(obj.profiles)) return obj.profiles.filter(function (c) { return c && c.name; });
-      throw new Error('This is not a Mayes Maths & More file');
+      var kids = obj && obj.kind === 'child' && obj.child && typeof obj.child === 'object' ? [obj.child] : obj && Array.isArray(obj.profiles) ? obj.profiles : null;
+      if (!kids) throw new Error('This is not a Mayes Maths & More file');
+      kids = kids.filter(function (c) { return c && typeof c === 'object' && typeof c.name === 'string' && c.name.trim(); }).slice(0, 40).map(cleanChild);
+      if (!kids.length) throw new Error('This is not a Mayes Maths & More file');
+      return kids;
     },
     // the same child on this device: the same id (moved before), else the same name and school year
     findMatch: function (c) {
@@ -91,7 +161,7 @@
     // Combining never loses anything and never double-counts: for every topic and every day it keeps the fuller record,
     // so bringing the same file in twice changes nothing.
     childMerge: function (c, target) {
-      c = JSON.parse(JSON.stringify(c));
+      c = cleanChild(c);
       if (!target) {
         if (Store.get(c.id)) c.id = newId();
         ['owned', 'tests', 'mtc', 'days'].forEach(function (k) { if (!Array.isArray(c[k])) c[k] = []; });
@@ -120,7 +190,6 @@
       if (!t.tier && c.tier) t.tier = c.tier;
       Store.save(); return t;
     },
-    exportJSON: function () { return JSON.stringify(data, null, 2); },
-    importJSON: function (s) { var d = JSON.parse(s); if (!d || !Array.isArray(d.profiles)) throw new Error('Not a Mayes Maths & More backup file'); Object.keys(d).forEach(function (k) { data[k] = d[k]; }); data.settings = Object.assign(blank().settings, data.settings); Store.save(); }
+    exportJSON: function () { return JSON.stringify(data, null, 2); }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

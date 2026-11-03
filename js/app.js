@@ -149,6 +149,7 @@
     if (OM.calc) OM.calc.enable(false); // screens that allow a calculator switch it back on after mounting
     root.innerHTML = html;
     tidyWrap(root);
+    root.querySelectorAll('form[data-nosubmit]').forEach(function (f) { f.onsubmit = function (e) { e.preventDefault(); }; });
     root.onclick = function (e) {
       var t = e.target.closest('[data-act]');
       if (!t || t.disabled) return;
@@ -976,7 +977,7 @@
     var p = App.profile;
     mount(header('Characters', { icon: 'user' }) + '<main class="team"><div class="card preview teamview"><div class="duo">' + avatar(120, null, 'cheer') + owl('happy', 140) + '</div>' +
       '<p class="vs">against</p>' + kingSVG(110) + '<p class="small-note">Changes save straight away. Your stars, feathers and acorns are kept.</p></div>' +
-      '<form class="card form" id="who" onsubmit="return false">' +
+      '<form class="card form" id="who" data-nosubmit>' +
       '<fieldset><legend>Your animal</legend>' + avatarPicker(p.avatar || 'otter', p.baddie || 'cat', realFor(p)) + '</fieldset>' +
       (OM.tierForYear(yearOf(p)) !== 'little' ? '<fieldset><legend>Your look</legend><p class="small-note">Your characters grow up as you move up the school years. You can keep an earlier look if you like it better.</p>' + lookPicker(p) + '</fieldset>' : '') +
       (OM.canSpeak() && OM.voices().length ? '<fieldset><legend>' + esc(owlName()) + '’s voice</legend><p class="small-note">This is your own voice choice; other explorers can pick a different one.</p><div class="row"><select name="pipvoice" class="ans">' + OM.voices().map(function (v) { return '<option value="' + esc(v.id) + '"' + (v.id === OM.currentVoiceId() ? ' selected' : '') + '>' + esc(v.name) + ' (' + v.accent + ')</option>'; }).join('') + '</select><button type="button" class="btn small ghost" data-act="hearvoice">' + I('speaker', { size: 20 }) + 'Hear it</button></div></fieldset>' : '') +
@@ -1163,7 +1164,7 @@
     var objsel = doc.getElementById('objsel'); if (objsel) objsel.onchange = function () { App.go('parent', { ok: true, tab: 'review', obj: objsel.value }, true); };
     ['boardsel', 'tiersel'].forEach(function (id) { var el = doc.getElementById(id); if (el) el.onchange = function () { var c = S.get(sel); c[id === 'boardsel' ? 'board' : 'tier'] = el.value || null; S.save(); toast('Saved.'); App.go('parent', { ok: true, tab: 'progress', child: c.id }, true); }; });
     var con = doc.getElementById('codeon');
-    if (con) con.onchange = function () { var c = S.get(sel); c.codeOn = con.checked; S.save(); toast(con.checked ? 'Secret code turned on for ' + c.name + '.' : 'Secret code turned off for ' + c.name + '.'); App.go('parent', { ok: true, tab: 'progress', child: c.id }, true); };
+    if (con) con.onchange = function () { var c = S.get(sel); c.codeOn = con.checked; S.save(); toast(con.checked ? 'Secret code turned on for ' + esc(c.name) + '.' : 'Secret code turned off for ' + esc(c.name) + '.'); App.go('parent', { ok: true, tab: 'progress', child: c.id }, true); };
     var ysel = doc.getElementById('yearsel');
     if (ysel) ysel.onchange = function () { var c = S.get(sel); c.year = +ysel.value; S.save(); toast(esc(c.name) + ' is now in Year ' + c.year + '.'); App.go('parent', { ok: true, tab: 'progress', child: c.id }, true); };
     var offbox = doc.getElementById('offbox');

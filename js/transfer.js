@@ -10,11 +10,23 @@
   'use strict';
   var OM = G.OM, doc = G.document;
   var CHUNK = 600, FRAME_MS = 380, TAG = 'MMM1';
+  // limits on what is read in, so a damaged or hostile file or set of codes cannot fill the device's memory
+  var MAX_FILE = 8 * 1048576, MAX_JSON = 8 * 1048576, MAX_FRAMES = 400;
 
   // ---------- packing: JSON → (deflate) → base64url ----------
   function b64(bytes) { var s = '', i; for (i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   function unb64(t) { t = t.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '='; var s = atob(t), u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
-  function pipe(bytes, Stream, mode) { return new Response(new Blob([bytes]).stream().pipeThrough(new Stream(mode))).arrayBuffer().then(function (b) { return new Uint8Array(b); }); }
+  // run bytes through a (de)compression stream, stopping if the result grows past MAX_JSON
+  function pipe(bytes, Stream, mode) {
+    var reader = new Blob([bytes]).stream().pipeThrough(new Stream(mode)).getReader(), parts = [], size = 0;
+    return (function more() {
+      return reader.read().then(function (r) {
+        if (r.done) { var out = new Uint8Array(size), at = 0; parts.forEach(function (p) { out.set(p, at); at += p.length; }); return out; }
+        size += r.value.length; if (size > MAX_JSON) { reader.cancel(); throw new Error('too big'); }
+        parts.push(r.value); return more();
+      });
+    })();
+  }
   var canZip = typeof G.CompressionStream === 'function' && typeof G.DecompressionStream === 'function';
   function pack(obj) {
     var raw = new TextEncoder().encode(JSON.stringify(obj));
@@ -23,7 +35,7 @@
   function unpack(text) {
     var kind = text.charAt(0), bytes = unb64(text.slice(1));
     var p = kind === 'z' ? pipe(bytes, G.DecompressionStream, 'deflate-raw') : Promise.resolve(bytes);
-    return p.then(function (u) { return JSON.parse(new TextDecoder().decode(u)); });
+    return p.then(function (u) { if (u.length > MAX_JSON) throw new Error('too big'); return JSON.parse(new TextDecoder().decode(u)); });
   }
   // split into QR-sized frames: MMM1:session:index:count:part
   function frames(payload) {
@@ -36,7 +48,7 @@
     var sid = null, parts = {}, count = 0;
     return {
       add: function (text) {
-        var m = /^MMM1:([a-z0-9]+):(\d+):(\d+):(.*)$/.exec(text || ''); if (!m) return null;
+        var m = /^MMM1:([a-z0-9]{1,12}):(\d{1,4}):(\d{1,4}):([A-Za-z0-9_-]*)$/.exec(text || ''); if (!m || +m[3] < 1 || +m[3] > MAX_FRAMES || +m[2] < 1 || +m[2] > +m[3]) return null;
         if (m[1] !== sid) { sid = m[1]; parts = {}; count = +m[3]; }
         parts[m[2]] = m[4];
         return { got: Object.keys(parts).length, of: count, done: Object.keys(parts).length === count ? Array.apply(null, Array(count)).map(function (_, i) { return parts[i + 1]; }).join('') : null };
@@ -81,7 +93,7 @@
     return Promise.resolve(download(file));
   };
   function download(file) { var a = doc.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; doc.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000); return 'downloaded'; }
-  OM.transfer.readFile = function (file) { return file.text().then(function (t) { return JSON.parse(t); }); };
+  OM.transfer.readFile = function (file) { if (file.size > MAX_FILE) return Promise.reject(new Error('too big')); return file.text().then(function (t) { return JSON.parse(t); }); };
 
   // ---------- sending: QR codes ----------
   OM.transfer.showQR = function (obj) {
@@ -142,7 +154,7 @@
     try { kids = OM.Store.childrenIn(obj); } catch (e) { G.alert(e.message); return; }
     var rows = kids.map(function (c, i) {
       var s = OM.Store.childSummary(c), match = OM.Store.findMatch(c);
-      return '<li class="xkid" data-i="' + i + '"><div><b>' + OM.esc(c.name) + '</b> · Year ' + c.year + '<br><small>' + s.answers + ' answers, ' + s.stars + ' stars, ' + s.days + ' days practised, ' + s.tests + ' tests</small>' +
+      return '<li class="xkid" data-i="' + i + '"><div><b>' + OM.esc(c.name) + '</b> · Year ' + c.year + '<br><small>' + (+s.answers) + ' answers, ' + s.stars + ' stars, ' + s.days + ' days practised, ' + s.tests + ' tests</small>' +
         (match ? '<br><small class="xmatch">' + OM.esc(match.name) + ' (Year ' + match.year + ') is already on this device.</small>' : '') + '</div><div class="row">' +
         (match ? '<button class="btn small" data-x="combine">Combine with ' + OM.esc(match.name) + '</button><button class="btn small ghost" data-x="new">Add as a separate explorer</button>' : '<button class="btn small" data-x="new">Add ' + OM.esc(c.name) + '</button>') + '</div></li>';
     }).join('');
@@ -154,7 +166,7 @@
         b.onclick = function () {
           var t = b.getAttribute('data-x') === 'combine' ? OM.Store.findMatch(c) : null, done = OM.Store.childMerge(c, t);
           li.innerHTML = '<div><b>' + OM.esc(done.name) + '</b>: ' + (t ? 'combined' : 'added') + ' ✓</div>';
-          if (onDone) onDone((t ? 'Combined ' : 'Added ') + done.name + '.');
+          if (onDone) onDone((t ? 'Combined ' : 'Added ') + OM.esc(done.name) + '.');
           if (!o.querySelector('.xkid [data-x]')) setTimeout(o.close, 900);
         };
       });
