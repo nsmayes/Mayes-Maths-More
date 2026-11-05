@@ -6,9 +6,9 @@
      first time the voice is used, or straight away with "Download Pip's voice" in the grown-ups' area, and after that it
      is always read from the device, never downloaded again.
    When any file changes, change VERSION so devices pick up the new copy. tests/run-checks.js checks FILES is complete. */
-var VERSION = 'v57';
+var VERSION = 'v58';
 var CACHE = 'mmm-app-' + VERSION, VOICE = 'mmm-voice-v1';
-var FILES = ['./', 'index.html', 'play.html', 'about.html', 'css/fonts.css', 'css/app.css', 'css/site.css', 'manifest.webmanifest', 'icon.svg', 'img/brand/mark.svg', 'img/brand/mark-small.svg',
+var FILES = ['./', 'index.html', 'play.html', 'about.html', 'help.html', 'css/fonts.css', 'css/app.css', 'css/site.css', 'manifest.webmanifest', 'icon.svg', 'img/brand/mark.svg', 'img/brand/mark-small.svg',
   'img/icons/icon-192.png', 'img/icons/icon-512.png', 'img/icons/maskable-512.png', 'img/icons/apple-touch-icon-180.png', 'img/icons/favicon-32.png',
   'js/core.js', 'js/marking.js', 'js/algebra.js', 'js/visuals.js', 'js/curriculum-y1.js', 'js/curriculum-y2.js', 'js/curriculum-y3.js', 'js/curriculum-y4.js', 'js/curriculum-y5.js',
   'js/curriculum-y6.js', 'js/curriculum-y7.js', 'js/curriculum-y8.js', 'js/curriculum-y9.js', 'js/gcse-content.js', 'js/curriculum-y10.js', 'js/curriculum-y11.js', 'js/kit.js',

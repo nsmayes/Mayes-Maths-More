@@ -267,7 +267,7 @@
       '<div class="profiles">' + ps.map(function (p) {
         return '<button class="pcard" data-act="pick" data-arg="' + p.id + '">' + avatar(76, p) + '<b>' + esc(p.name) + '</b><span>Year ' + p.year + '</span><span>' + I('feather', { size: 16 }) + p.feathers + ' feathers</span></button>';
       }).join('') + '<button class="pcard add" data-act="add"><span class="plus">' + I('plus', { size: 32, stroke: 2.5 }) + '</span><b>Add an explorer</b></button></div>' +
-      '<p class="homelinks"><button class="link" data-act="parent">' + I('lock', { size: 18 }) + 'Grown-ups’ area</button><a class="link" href="about.html">About and privacy</a></p></div>', {
+      '<p class="homelinks"><button class="link" data-act="parent">' + I('lock', { size: 18 }) + 'Grown-ups’ area</button><a class="link" href="help.html">Help and contact</a><a class="link" href="about.html">About and privacy</a></p></div>', {
       pick: function (id) { var p = S.get(id); if (codeOn(p)) App.go('code', { id: id }); else enterAs(p); },
       add: function () { App.go('newProfile'); },
       parent: function () { App.go('parent', {}); }
