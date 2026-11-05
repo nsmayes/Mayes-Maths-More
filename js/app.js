@@ -12,7 +12,7 @@
   function ykey(k, p) { var y = yearOf(p); return y === 4 ? k : 'Y' + y + ':' + k; }
   function guardBeaten(r, p) { p = p || App.profile; return !!(p.guards || {})[ykey(r.id, p)]; }
   function escaped(p) { p = p || App.profile; return yearOf(p) === 4 ? !!p.escaped : !!(p.escapedYears || {})[yearOf(p)]; }
-  function setEscaped(p) { if (yearOf(p) === 4) p.escaped = true; else { p.escapedYears = p.escapedYears || {}; p.escapedYears[yearOf(p)] = true; } }
+  function setEscaped(p) { p.finished = p.finished || {}; p.finished[yearOf(p)] = { d: OM.dayKey ? OM.dayKey(Date.now()) : new Date().toISOString().slice(0, 10), b: baddie(p).id }; if (yearOf(p) === 4) p.escaped = true; else { p.escapedYears = p.escapedYears || {}; p.escapedYears[yearOf(p)] = true; } }
   function tier(p) { p = p || App.profile || {}; var own = OM.tierForYear(yearOf(p)); return p.look && OM.tierIndex(p.look) >= 0 && OM.tierIndex(p.look) <= OM.tierIndex(own) ? p.look : own; }
   function tablesFor(y) { return y <= 1 ? [] : y === 2 ? [2, 5, 10] : y === 3 ? [2, 3, 4, 5, 8, 10] : [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; }
   var LEVEL_NAMES = { 1: 'Getting there', 2: 'Expected', 3: 'Greater depth' };
@@ -91,7 +91,7 @@
   }
   function reward(feathers, acorns, why) {
     var p = App.profile; if (!p) return;
-    p.feathers += feathers || 0; p.acorns += acorns || 0; S.save();
+    S.earn(p, feathers, acorns); p.feathers += feathers || 0; p.acorns += acorns || 0; S.save();
     var b = doc.querySelector('.stat-f'); if (b) b.textContent = p.feathers;
     var a = doc.querySelector('.stat-a'); if (a) a.textContent = p.acorns;
     if (acorns) toast(I('acorn', { size: 18 }) + ' +' + acorns + ' acorn' + (acorns > 1 ? 's' : '') + (why ? ' — ' + why : ''), 'gold');
@@ -406,7 +406,7 @@
         '<text x="' + n[0] + '" y="' + (n[1] + 96) + '" font-family="Lexend, sans-serif" font-size="13" text-anchor="middle" fill="#a9c4bd">★ ' + got + ' of ' + vis.length + ' topics</text></g>';
     }).join('');
     var pipAt = walk ? from : beaten >= N ? GATE : NODES[beaten], older = tier() === 'pro';
-    var msg = walk ? (beaten >= N ? (older ? 'Every place cleared. Next stop: ' : 'Hop, hop, hop! On to ') + 'the ' + W.gate + ' to face ' + kingName() + '.' : (older ? regs[beaten - 1].name + ' cleared. On to ' : 'We got past! Hop, hop, hop… on to ') + regs[beaten].name + '!') : escaped() ? 'We did it! Keep practising to fill every topic with stars.' : beaten === 0 ? 'Let’s start at ' + regs[0].name + '. Tap a place on the map to learn and practise.' : beaten >= N ? 'Every guard is beaten! Now face ' + kingName() + ' at the ' + W.gate + '.' : 'You have beaten ' + beaten + ' guard' + (beaten > 1 ? 's' : '') + '. The next place is lit up.';
+    var msg = walk ? (beaten >= N ? (older ? 'Every place cleared. Next stop: ' : 'Hop, hop, hop! On to ') + OM.cert.gateName(yearOf()) + ' to face ' + kingName() + '.' : (older ? regs[beaten - 1].name + ' cleared. On to ' : 'We got past! Hop, hop, hop… on to ') + regs[beaten].name + '!') : escaped() ? 'We did it! Keep practising to fill every topic with stars.' : beaten === 0 ? 'Let’s start at ' + regs[0].name + '. Tap a place on the map to learn and practise.' : beaten >= N ? 'Every guard is beaten! Now face ' + kingName() + ' at the ' + W.gate + '.' : 'You have beaten ' + beaten + ' guard' + (beaten > 1 ? 's' : '') + '. The next place is lit up.';
     function mi(act, icon, title, sub, cls) { return '<button class="mitem ' + (cls || '') + '" data-act="' + act + '"><span class="mi">' + I(icon, { size: 26 }) + '</span><span><b>' + title + '</b><small>' + sub + '</small></span>' + I('next', { size: 20 }) + '</button>'; }
     var tabs = tablesFor(yearOf()).length > 0;
     var html = (W.light ? '' : fireflies(14)) + header(W.name, { icon: W.icon }) +
@@ -440,12 +440,13 @@
       (elevenOn() ? mi('eleven', 'trophy', '11+ Training Camp', 'Maths and non-verbal reasoning, 11+ style') : '') +
       mi('shop', 'nest', 'Dressing-up chest', 'Spend acorns on outfits for your ' + esc(OM.animalName(App.profile.avatar))) +
       mi('team', 'user', 'Characters', 'Change your animal, ' + esc(owlName()) + '’s colour or the baddie') +
+      (OM.cert.completed(p).length ? mi('certs', 'trophy', 'My certificates', 'Your award for finishing a year: save or print it') : '') +
       mi('help', 'book', 'Help book', 'How to do every topic') + '</nav>' +
       '<p class="streak"><span>' + I('flame', { size: 18 }) + S.streakDays(p) + ' day streak</span><span>' + I('refresh', { size: 18 }) + p.fixIts + ' brave fixes</span></p></div></main>';
     mount(html, {
       region: function (id) { App.go('region', { id: id }); },
       tables: function () { App.go('mtcIntro'); }, gate: function () { App.go('gate'); }, mix: function () { firstPracticeToday(); App.go('practice', { mix: true }); },
-      shop: function () { App.go('shop'); }, team: function () { App.go('team'); }, help: function () { App.go('help', {}); }, eleven: function () { App.go('eleven'); }, tricks: function () { App.go('region', { id: 'xt' }); }
+      shop: function () { App.go('shop'); }, team: function () { App.go('team'); }, help: function () { App.go('help', {}); }, eleven: function () { App.go('eleven'); }, tricks: function () { App.go('region', { id: 'xt' }); }, certs: function () { App.go('certificate', {}); }
     });
     // on a phone the map is shown larger and scrolls sideways: start with Pip's spot in the middle
     var mc = root.querySelector('.mapcard'), pm = root.querySelector('.pip-marker');
@@ -776,7 +777,7 @@
         p.papers = p.papers || {};
         if (pct >= 60) { var newPass = !p.papers[ykey(pr.paper)]; p.papers[ykey(pr.paper)] = true; if (newPass) reward(0, 10, 'paper passed'); }
         var allPassed = Object.keys(OM.papersFor(yearOf(), p)).every(function (k) { return p.papers[ykey(k)]; });
-        if (allPassed && !escaped()) { setEscaped(p); S.save(); msg = 'You beat ' + esc(kingName()) + '! The ' + WORLD().gate + ' opens and the adventure is won!'; confetti(); OM.sfx.reward(); }
+        if (allPassed && !escaped()) { setEscaped(p); S.save(); msg = 'You beat ' + esc(kingName()) + '! ' + OM.cert.gateName(yearOf()).replace(/^the/, 'The') + ' opens and the adventure is won!'; confetti(); OM.sfx.reward(); }
         else msg = pct >= 60 ? 'Great paper! ' + esc(kingName(true)) + ' is getting worried…' : esc(kingName(true)) + ' laughs… but every practice paper makes you stronger.';
         S.save();
       }
@@ -790,7 +791,8 @@
             (res.notes.length ? '<ul class="notes">' + res.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('') + '</ul>' : '') +
             '<div class="scheme open"><b>' + I('clipboard', { size: 20 }) + 'Mark scheme</b><ul>' + OM.schemeLines(q).map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul></div>' +
             '<div class="solution"><h4>How to do it</h4>' + q.solution.map(function (s, n) { return '<div class="step"><span class="stepn">' + (n + 1) + '</span><div><p>' + s.text + '</p>' + (s.html ? '<div class="vis-wrap">' + s.html + '</div>' : '') + '</div></div>'; }).join('') + '</div></details>';
-        }).join('') + '<div class="row"><button class="btn big" data-act="' + (passed ? 'tomap' : 'back') + '">Done</button></div></main>', {
+        }).join('') + '<div class="row">' + (pr.kind === 'paper' && escaped() ? '<button class="btn big" data-act="cert">' + I('trophy', { size: 22 }) + 'See your certificate</button>' : '') + '<button class="btn ' + (pr.kind === 'paper' && escaped() ? 'ghost' : 'big') + '" data-act="' + (passed ? 'tomap' : 'back') + '">Done</button></div></main>', {
+        cert: function () { App.go('certificate', { year: yearOf() }, true); },
         // a guard passed: back to the map, where Pip and the explorer travel on to the next place (the first time it is beaten)
         tomap: function () { var k = App.stack.map(function (e) { return e[0]; }).lastIndexOf('map'); if (k >= 0) App.stack.length = k; App.go('map', first ? { walk: true } : {}); }
       });
@@ -845,6 +847,29 @@
       }).join('') + '</main>', {
       start: function (k) { App.go('test', { kind: 'paper', paper: k, seed: OM.newSeed() }); }
     });
+  };
+
+  // ---------- THE CERTIFICATE for finishing a year (js/certificate.js) ----------
+  Screens.certificate = function (pr) {
+    var p = pr.child ? S.get(pr.child) : App.profile; if (!p) return App.back();
+    var years = OM.cert.completed(p), y = years.indexOf(+pr.year) >= 0 ? +pr.year : years[years.length - 1];
+    if (!y) { mount(header('Certificates', { icon: 'trophy' }) + '<main class="narrow"><div class="card center"><p class="bigtext">' + esc(p.name) + ' has no certificates yet.</p><p>A certificate appears when the final challenge of a year has been won.</p></div></main>', {}); return; }
+    mount(header('Certificates', { icon: 'trophy' }) + '<main class="certpage">' +
+      (years.length > 1 ? '<div class="row certyears">' + years.map(function (v) { return '<button class="btn small ' + (v === y ? '' : 'ghost') + '" data-act="year" data-arg="' + v + '">Year ' + v + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="card center"><div class="certview" id="certview"><p class="muted">Drawing the certificate…</p></div>' +
+      '<div class="row certbtns"><button class="btn big" data-act="pdf">' + I('download', { size: 22 }) + 'Save as PDF</button>' + (G.print ? '<button class="btn ghost" data-act="print">Print</button>' : '') + '</div>' +
+      '<p class="small-note">It fits an A4 page. It shows ' + esc(p.name) + '’s animal wearing what they have on now, so dress up first if you like! ' + (pr.child ? '' : 'A grown-up can find it too, under Grown-ups’ area → Certificates.') + '</p></div></main>', {
+      year: function (v) { App.go('certificate', { year: +v, child: pr.child }, true); },
+      pdf: function () { OM.cert.save(p, y).then(function (how) { if (how === 'downloaded') toast('Saved. Look in your downloads folder.'); }).catch(function () { toast('The PDF could not be made on this device. Try Print instead.'); }); },
+      print: function () { OM.cert.print(p, y).catch(function () { toast('Printing could not start on this device. Try Save as PDF instead.'); }); }
+    });
+    OM.cert.draw(p, y).then(function (c) {
+      var box = doc.getElementById('certview'); if (!box) return;
+      var s = OM.cert.stats(p, y), w = OM.cert.wording(p, y), img = new Image();
+      img.src = c.toDataURL('image/jpeg', 0.88); img.className = 'certimg';
+      img.alt = 'Certificate for ' + w.name + '. ' + w.line + '. ' + w.well + '. Stars: ' + s.stars + '. Feathers: ' + s.feathers + '. Acorns: ' + s.acorns + '.';
+      box.innerHTML = ''; box.appendChild(img);
+    }).catch(function () { var box = doc.getElementById('certview'); if (box) box.innerHTML = '<p class="muted">The certificate could not be drawn on this device.</p>'; });
   };
 
   // ---------- MULTIPLICATION TABLES CHECK ----------
@@ -1042,7 +1067,7 @@
       return;
     }
     var tab = pr.tab || 'progress', ps = S.profiles(), sel = pr.child || (ps[0] && ps[0].id);
-    var tabs = [['progress', 'Progress'], ['improve', 'Improvement'], ['review', 'Check the content'], ['reports', 'Reported questions (' + S.data.reports.length + ')'], ['settings', 'Settings'], ['data', 'Backup & move'], ['about', 'How accuracy is checked']];
+    var tabs = [['progress', 'Progress'], ['improve', 'Improvement'], ['review', 'Check the content'], ['certs', 'Certificates'], ['reports', 'Reported questions (' + S.data.reports.length + ')'], ['settings', 'Settings'], ['data', 'Backup & move'], ['about', 'How accuracy is checked']];
     var body = '';
     if (tab === 'progress') {
       var c = S.get(sel);
@@ -1098,6 +1123,14 @@
           }).join('');
         }).join('');
     }
+    if (tab === 'certs') {
+      var kid = S.get(sel), won = kid ? OM.cert.completed(kid) : [];
+      body = ps.length ? '<div class="row">' + ps.map(function (p) { return '<button class="btn small ' + (p.id === sel ? '' : 'ghost') + '" data-act="child" data-arg="' + p.id + '">' + esc(p.name) + '</button>'; }).join('') + '</div>' : '<p class="muted">No explorers yet.</p>';
+      if (kid) body += won.length ? won.map(function (v) {
+        var st = OM.cert.stats(kid, v), wd = OM.cert.wording(kid, v);
+        return '<div class="card certrow"><div><h3>Year ' + v + (wd.date ? ' <small class="muted">' + esc(wd.date) + '</small>' : '') + '</h3><p>' + esc(wd.line) + '.</p><p class="small-note">Stars: ' + st.stars + ' · Feathers: ' + st.feathers + ' · Acorns: ' + st.acorns + '</p></div><button class="btn" data-act="opencert" data-arg="' + kid.id + '|' + v + '">' + I('trophy', { size: 20 }) + 'Open, save or print</button></div>';
+      }).join('') : '<div class="card"><p>' + esc(kid.name) + ' has no certificates yet. One appears here when they win the final challenge of a year, by passing all the practice papers at ' + esc(OM.cert.gateName(yearOf(kid))) + '.</p></div>';
+    }
     if (tab === 'reports') {
       body = S.data.reports.length ? S.data.reports.slice().reverse().map(function (r, k) {
         var q = OM.generate(r.gen, r.level, r.seed);
@@ -1150,6 +1183,7 @@
       tab: function (t) { App.go('parent', { ok: true, tab: t }, true); },
       child: function (id) { App.go('parent', { ok: true, tab: tab === 'improve' ? 'improve' : 'progress', child: id }, true); },
       more: function () { App.go('parent', { ok: true, tab: 'review', obj: pr.obj, seed: OM.newSeed() }, true); },
+      opencert: function (v) { var q = String(v).split('|'); App.go('certificate', { child: q[0], year: +q[1] }); },
       delrep: function (k) { S.data.reports.splice(+k, 1); S.save(); App.go('parent', { ok: true, tab: 'reports' }, true); },
       testvoice: function () { OM.say('Hoo hoo! What is 7 times 8?', { force: true }); },
       newpin: function () { s.pin = null; S.save(); App.go('parent', {}, true); },

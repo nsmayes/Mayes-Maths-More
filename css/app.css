@@ -946,3 +946,13 @@ label.ansline { max-width: 100%; } label.ansline input.ans { min-width: 0; flex:
 @media (prefers-reduced-motion: reduce) { body:not(.motion-on) .map .chest .lid, body:not(.motion-on) .map .chest .sparks { animation: none; } body:not(.motion-on) .map .chest.shiny .sparks { opacity: 1; } }
 /* tall hats from the dressing-up chest may rise above the animal's own drawing area */
 svg.char { overflow: visible; }
+.pbtn svg.char { overflow: hidden; } /* the small header button keeps its animal inside the button */
+
+/* ---------- the certificate for finishing a year (js/certificate.js) ---------- */
+.certpage { max-width: 900px; margin: 0 auto; padding: 16px; position: relative; z-index: 1; }
+.certyears { justify-content: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.certview { min-height: 220px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.certimg { width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 6px 24px rgba(14, 42, 47, .18); }
+.certbtns { justify-content: center; flex-wrap: wrap; gap: 10px; }
+.certrow { display: flex; align-items: center; justify-content: space-between; gap: 12px 18px; flex-wrap: wrap; }
+.certrow h3 { margin: 0 0 4px; } .certrow p { margin: 4px 0; } .certrow > div { flex: 1 1 280px; }

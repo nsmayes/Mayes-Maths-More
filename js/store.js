@@ -74,6 +74,12 @@
     o.mtc = list(c.mtc, 2000).filter(function (t) { return t && typeof t === 'object'; }).map(function (t) { return { date: num(t.date, 0, 4e12, 0), year: int(t.year, 1, 11, 4), score: int(t.score, 0, 25, 0) }; });
     o.days = list(c.days, 4000).filter(function (d) { return typeof d === 'string' && DAY.test(d); });
     ['guards', 'papers', 'escapedYears'].forEach(function (k) { o[k] = {}; keys(c[k]).forEach(function (g) { if (c[k][g] === true) o[k][g] = true; }); });
+    // left out when missing, so an older file's totals are worked out by Store.ledger
+    if (c.earned && typeof c.earned === 'object') { o.earned = {}; keys(c.earned).filter(function (y) { return /^([1-9]|1[01])$/.test(y); }).forEach(function (y) { var e = c.earned[y] || {}; o.earned[y] = { f: int(e.f, 0, 1e7, 0), a: int(e.a, 0, 1e7, 0) }; }); }
+    o.finished = {};
+    keys(c.finished).filter(function (y) { return /^([1-9]|1[01])$/.test(y); }).forEach(function (y) {
+      var e = c.finished[y] || {}, x = {}; if (typeof e.d === 'string' && DAY.test(e.d)) x.d = e.d; if (OMx.BADDIES && own.call(OMx.BADDIES, e.b)) x.b = e.b; o.finished[y] = x;
+    });
     return o;
   }
   // every explorer gets a different id, even two added in the same millisecond
@@ -182,6 +188,10 @@
       t.days = (t.days || []).concat(c.days || []).filter(function (d, i, all) { return all.indexOf(d) === i; }).sort();
       t.owned = (t.owned || []).concat(c.owned || []).filter(function (d, i, all) { return all.indexOf(d) === i; });
       ['guards', 'papers', 'escapedYears'].forEach(function (k) { if (c[k]) { t[k] = t[k] || {}; Object.keys(c[k]).forEach(function (g) { if (c[k][g]) t[k][g] = true; }); } });
+      // what was earned in each year: the fuller record, as for everything else; the first record of winning a year stands
+      var le = Store.ledger(t), lc = Store.ledger(c);
+      Object.keys(lc).forEach(function (y) { var a = le[y] || { f: 0, a: 0 }; le[y] = { f: Math.max(a.f, lc[y].f), a: Math.max(a.a, lc[y].a) }; });
+      t.finished = t.finished || {}; Object.keys(c.finished || {}).forEach(function (y) { if (!t.finished[y]) t.finished[y] = c.finished[y]; });
       ['feathers', 'acorns', 'fixIts'].forEach(function (k) { t[k] = Math.max(t[k] || 0, c[k] || 0); });
       ['introSeen', 'escaped'].forEach(function (k) { t[k] = !!(t[k] || c[k]); });
       t.year = Math.max(t.year || 1, c.year || 1);
@@ -189,6 +199,21 @@
       if (!t.board && c.board) t.board = c.board;
       if (!t.tier && c.tier) t.tier = c.tier;
       Store.save(); return t;
+    },
+    // What a child has earned in each school year: { year: { f: feathers, a: acorns } }. Acorns earned, not the balance,
+    // since buying outfits spends them. Children who started before this was kept have their totals so far put against
+    // their current year (acorns earned = balance + spent on outfits − the 5 everyone starts with).
+    ledger: function (p) {
+      if (!p.earned) {
+        var spent = (p.owned || []).reduce(function (t, id) { var it = OM.outfitById && OM.outfitById(id); return t + (it ? it.price : 0); }, 0);
+        p.earned = {}; p.earned[p.year || 4] = { f: p.feathers || 0, a: Math.max(0, (p.acorns || 0) + spent - 5) };
+      }
+      return p.earned;
+    },
+    // call before adding to the child's totals
+    earn: function (p, feathers, acorns) {
+      var led = Store.ledger(p), y = p.year || 4, e = led[y] || (led[y] = { f: 0, a: 0 });
+      e.f += feathers || 0; e.a += acorns || 0;
     },
     exportJSON: function () { return JSON.stringify(data, null, 2); }
   };

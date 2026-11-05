@@ -6,7 +6,7 @@
      first time the voice is used, or straight away with "Download Pip's voice" in the grown-ups' area, and after that it
      is always read from the device, never downloaded again.
    When any file changes, change VERSION so devices pick up the new copy. tests/run-checks.js checks FILES is complete. */
-var VERSION = 'v56';
+var VERSION = 'v57';
 var CACHE = 'mmm-app-' + VERSION, VOICE = 'mmm-voice-v1';
 var FILES = ['./', 'index.html', 'play.html', 'about.html', 'css/fonts.css', 'css/app.css', 'css/site.css', 'manifest.webmanifest', 'icon.svg', 'img/brand/mark.svg', 'img/brand/mark-small.svg',
   'img/icons/icon-192.png', 'img/icons/icon-512.png', 'img/icons/maskable-512.png', 'img/icons/apple-touch-icon-180.png', 'img/icons/favicon-32.png',
@@ -14,7 +14,7 @@ var FILES = ['./', 'index.html', 'play.html', 'about.html', 'css/fonts.css', 'cs
   'js/curriculum-y6.js', 'js/curriculum-y7.js', 'js/curriculum-y8.js', 'js/curriculum-y9.js', 'js/gcse-content.js', 'js/curriculum-y10.js', 'js/curriculum-y11.js', 'js/kit.js',
   'js/gen-number.js', 'js/gen-muldiv.js', 'js/gen-fractions.js', 'js/gen-measure.js', 'js/gen-geometry.js', 'js/gen-stats.js', 'js/gen-y1.js', 'js/gen-y2.js', 'js/gen-y3.js',
   'js/gen-y5.js', 'js/gen-y6.js', 'js/gen-y7.js', 'js/gen-y8.js', 'js/gen-y9.js', 'js/gen-y10.js', 'js/gen-y11.js', 'js/gen-higher.js', 'js/gen-hparts.js', 'js/working.js',
-  'js/eleven.js', 'js/eleven-english.js', 'js/demos.js', 'js/tricks.js', 'js/papers.js', 'js/illustrations.js', 'js/icons.js', 'js/worlds.js', 'js/characters.js', 'js/animals.js', 'js/animals-real.js', 'js/outfits.js',
+  'js/eleven.js', 'js/eleven-english.js', 'js/demos.js', 'js/tricks.js', 'js/papers.js', 'js/illustrations.js', 'js/certificate.js', 'js/icons.js', 'js/worlds.js', 'js/characters.js', 'js/animals.js', 'js/animals-real.js', 'js/outfits.js',
   'js/tracker.js', 'js/store.js', 'js/neural.js', 'js/speech.js', 'js/offline.js', 'js/transfer.js', 'js/vendor/qrcode-generator.js', 'js/vendor/jsQR.js', 'js/vendor/APACHE-LICENSE-2.0.txt', 'js/widgets.js', 'js/calculator.js', 'js/app.js', 'js/site.js', 'js/boot.js', 'js/version.js'];
 
 self.addEventListener('install', function (e) {
