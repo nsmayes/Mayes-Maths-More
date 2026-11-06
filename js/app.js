@@ -123,7 +123,9 @@
     root.innerHTML = '';
     root.className = 'screen-' + name;
     doc.body.style.setProperty('--world', App.profile ? WORLD().page : '#0e2a2f');
+    applyFont();
     s(params);
+    limitCheck();
   }
   function header(title, opts) {
     opts = opts || {};
@@ -258,11 +260,22 @@
   var Screens = {};
 
   // ---------- HOME: choose an explorer ----------
+  var backupLater = false;
+  function saveBackup() {
+    S.settings().lastBackup = Date.now(); S.save();
+    var b = new Blob([S.exportJSON()], { type: 'application/json' }), a = doc.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'owl-maths-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
+    toast('Back-up saved. Look for it in your downloads and keep it somewhere safe.');
+  }
+  function backupWords() {
+    var s = S.settings();
+    return !s.lastBackup ? 'No back-up has been made yet.' : 'A back-up is due: the last one was on ' + new Date(s.lastBackup).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) + '.';
+  }
   Screens.home = function () {
-    App.profile = null;
+    App.profile = null; applyFont();
     var ps = S.profiles();
     mount(treeline() + fireflies(22) + soundBtn('floating') + '<div class="home">' +
       '<h1 class="home-logo">' + OM.logo({ dark: true, size: 132, id: 'homeLogo' }) + '</h1><p class="with-pip">Maths from Year 1 to GCSE, plus 11+ practice. Join Pip the owl on an adventure for your school year.</p>' +
+      (S.backupDue(Date.now()) && !backupLater ? '<div class="card backupnudge homebackup"><span>' + I('download', { size: 22 }) + '</span><p><b>For grown-ups:</b> ' + backupWords() + '</p><div class="row"><button class="btn small" data-act="backup">Save a back-up</button><button class="btn small ghost" data-act="later">Not now</button></div></div>' : '') +
       '<h2>Who is exploring today?</h2>' +
       '<div class="profiles">' + ps.map(function (p) {
         return '<button class="pcard" data-act="pick" data-arg="' + p.id + '">' + avatar(76, p) + '<b>' + esc(p.name) + '</b><span>Year ' + p.year + '</span><span>' + I('feather', { size: 16 }) + p.feathers + ' feathers</span></button>';
@@ -270,6 +283,8 @@
       '<p class="homelinks"><button class="link" data-act="parent">' + I('lock', { size: 18 }) + 'Grown-ups’ area</button><a class="link" href="help.html">Help and contact</a><a class="link" href="about.html">About and privacy</a></p></div>', {
       pick: function (id) { var p = S.get(id); if (codeOn(p)) App.go('code', { id: id }); else enterAs(p); },
       add: function () { App.go('newProfile'); },
+      backup: function () { saveBackup(); App.go('home', {}, true); },
+      later: function () { backupLater = true; App.go('home', {}, true); },
       parent: function () { App.go('parent', {}); }
     });
   };
@@ -625,6 +640,7 @@
       if (!q) { st.n--; st.total = st.n; return summary(); }
       draw();
     }
+    function tally() { return '<span>' + I('feather', { size: 18 }) + st.feathers + ' this round</span><span>' + I('check', { size: 18, stroke: 2.6 }) + st.right + ' right</span>'; }
     function draw() {
       var o = OM.objectiveIndex[objId];
       mount(header(mix ? 'Daily mix' : 'Practise: ' + o.title, { color: regionOf(o.id).color }) + '<main class="practice">' +
@@ -635,7 +651,7 @@
         '<div class="row qbtns"><button class="btn big" data-act="check" id="checkBtn">' + I('check', { size: 24, stroke: 2.6 }) + 'Check my answer</button><button class="btn ghost" data-act="hint">' + I('bulb', { size: 20 }) + 'Hint</button><button class="btn ghost" data-act="how">' + I('eye', { size: 20 }) + 'Show me how</button></div>' +
         '<div id="fb" class="feedback" aria-live="polite"></div></div>' +
         '<aside class="side"><div class="bubble" id="owlTalk">' + owl('happy', 90) + '<p id="owlSays">' + (st.streak >= 3 ? 'You are on a streak of ' + st.streak + '!' : 'Take your time. You can do it!') + '</p></div>' +
-        '<div class="sessbar"><span>' + I('feather', { size: 18 }) + st.feathers + ' this round</span><span>' + I('check', { size: 18, stroke: 2.6 }) + st.right + ' right</span></div>' +
+        '<div class="sessbar" id="sessbar">' + tally() + '</div>' +
         '<button class="link" data-act="report">' + I('flag', { size: 18 }) + 'Something wrong with this question?</button></aside></main>', acts);
       ctl = W.render(doc.getElementById('qin'), q, { onEnter: function () { var b = doc.getElementById('checkBtn'); if (b && !b.disabled) acts.check(); } });
       if (OM.calc) OM.calc.enable(!!q.calc, 'practice:' + (mix ? 'mix' : pr.id) + ':' + roundId);
@@ -666,7 +682,7 @@
           var f = revealed ? 0 : attempt === 1 ? (q.level === 3 ? 2 : 1) + (q.marks === 2 ? 1 : 0) : 1;
           if (attempt === 2 && !revealed) { p.fixIts++; S.save(); }
           if (attempt === 1 && !revealed) { st.right++; st.streak++; st.wrongRun = 0; adapt(true); } else st.streak = 0;
-          st.feathers += f; reward(f);
+          st.feathers += f; reward(f); doc.getElementById('sessbar').innerHTML = tally();
           if (st.streak && st.streak % 5 === 0) reward(0, 1, st.streak + ' in a row!');
           fb.innerHTML = '<div class="fb good"><div class="fbtop"><p class="fbh">' + I('check', { size: 26, stroke: 2.8 }) + (attempt === 2 ? 'Brave fixer! You fixed your mistake.' : 'Correct! ' + res.score + ' mark' + (res.score > 1 ? 's' : '') + '.') + (f ? '<span class="plusf">' + I('feather', { size: 18 }) + '+' + f + '</span>' : '') + '</p>' + '<button class="btn big nextbtn" data-act="next">Next' + I('next', { size: 22, stroke: 2.5 }) + '</button>' + '</div>' +
             (res.notes.length ? '<ul>' + res.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('') + '</ul>' : '') + schemeBox(res) + '</div>';
@@ -848,6 +864,57 @@
       start: function (k) { App.go('test', { kind: 'paper', paper: k, seed: OM.newSeed() }); }
     });
   };
+
+  // ---------- PLAY TIME LIMITS (the rules are in js/playtime.js; a grown-up sets them for each child) ----------
+  // Tests and practice papers are not counted and the pop-up never covers them. It appears when the child comes out of one.
+  var PT = OM.playtime, NOT_COUNTED = { test: 1, mtc: 1 }, limitBox = null, limitShown = '', limitTick = Date.now(), lastTouch = Date.now(), limitSaved = 0;
+  function limitWords(b, p) {
+    var m = b.mins + ' minute' + (b.mins === 1 ? '' : 's');
+    return b.kind === 'row' ? 'You have played for ' + m + ' in a row. Time for a break!' :
+      b.kind === 'hour' ? 'You have used your ' + m + ' of play for this hour.' :
+      b.kind === 'span' ? 'You have used your ' + m + ' of play for these ' + p.limits.spanH + ' hours.' :
+      'You have used your ' + m + ' of play for today.';
+  }
+  function limitClose() {
+    if (!limitBox) return;
+    limitBox.remove(); limitBox = null; limitShown = ''; root.inert = false;
+  }
+  function limitCheck() {
+    var p = App.profile, top = App.stack[App.stack.length - 1], now = Date.now();
+    var b = p && top && !NOT_COUNTED[top[0]] ? PT.blocked(p, now) : [];
+    if (!b.length) return limitClose();
+    var last = b.reduce(function (m, x) { return x.at > m.at ? x : m; }), can = PT.canExtend(p, now), when = new Date(last.at),
+      back = last.kind === 'day' ? 'You can play again tomorrow.' : 'You can play again at ' + when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '.', sig = b.map(function (x) { return x.kind + x.mins; }).join() + can + back;
+    if (sig === limitShown) return;
+    limitClose(); limitShown = sig;
+    OM.stopSpeaking(); W.hideKeypad(); root.inert = true;
+    limitBox = doc.createElement('div'); limitBox.className = 'ptover'; limitBox.setAttribute('role', 'dialog'); limitBox.setAttribute('aria-modal', 'true'); limitBox.setAttribute('aria-labelledby', 'ptTitle');
+    limitBox.innerHTML = '<div class="card ptcard">' + owl('happy', 90) + '<h2 id="ptTitle">Play time limit</h2><p class="bigtext">' + limitWords(last, p) + '</p><p>' + back + '</p>' +
+      (can ? '<button class="btn big" data-pt="extend">' + I('timer', { size: 22 }) + 'Extend by ' + PT.BONUS_MINS + ' minutes</button><p class="muted small-note">You can only do this once.</p>' : '') +
+      '<div class="row ptbtns"><button class="btn ghost" data-pt="player">Change player</button></div>' +
+      '<button class="link" data-pt="grownups">' + I('lock', { size: 18 }) + 'Grown-ups’ area</button></div>';
+    limitBox.onclick = function (e) {
+      var t = e.target.closest('[data-pt]'); if (!t) return;
+      var a = t.getAttribute('data-pt');
+      if (a === 'extend') { PT.extend(p, Date.now()); S.save(); limitCheck(); }
+      else { App.profile = null; App.stack = []; App.go(a === 'player' ? 'home' : 'parent', {}); }
+    };
+    doc.body.appendChild(limitBox);
+    limitBox.querySelector('button').focus();
+  }
+  ['pointerdown', 'keydown'].forEach(function (ev) { doc.addEventListener(ev, function () { lastTouch = Date.now(); }, true); });
+  // counted once a second: only while this child has a limit, the app is on screen, and someone has touched it in the last few minutes
+  G.setInterval(function () {
+    var p = App.profile, top = App.stack[App.stack.length - 1], now = Date.now(), secs = Math.min(5, (now - limitTick) / 1000); limitTick = now;
+    if (!p || !top || !PT.active(p)) return limitClose();
+    if (doc.visibilityState === 'visible' && now - lastTouch < PT.IDLE_MS) {
+      if (NOT_COUNTED[top[0]]) PT.busy(p, now);
+      else if (!limitBox) PT.add(p, secs, now);
+      if (now - limitSaved > 15000) { limitSaved = now; S.save(); }
+    }
+    limitCheck();
+  }, 1000);
+  doc.addEventListener('visibilitychange', function () { if (doc.visibilityState !== 'visible' && App.profile && App.profile.pt) S.save(); });
 
   // ---------- THE CERTIFICATE for finishing a year (js/certificate.js) ----------
   Screens.certificate = function (pr) {
@@ -1067,15 +1134,23 @@
       return;
     }
     var tab = pr.tab || 'progress', ps = S.profiles(), sel = pr.child || (ps[0] && ps[0].id);
-    var tabs = [['progress', 'Progress'], ['improve', 'Improvement'], ['review', 'Check the content'], ['certs', 'Certificates'], ['reports', 'Reported questions (' + S.data.reports.length + ')'], ['settings', 'Settings'], ['data', 'Backup & move'], ['about', 'How accuracy is checked']];
+    var repN = S.data.reports.length, sections = [
+      ['Child settings', [['child', 'Year, text style and code'], ['limits', 'Time limits'], ['move', 'Move a child']]],
+      ['Progress', [['progress', 'Stars and tests'], ['improve', 'Improvement'], ['certs', 'Certificates']]],
+      ['Content' + (repN ? ' (' + repN + ')' : ''), [['reports', 'Reported questions (' + repN + ')'], ['review', 'Check the content'], ['about', 'How accuracy is checked']]],
+      ['Settings and back-up', [['settings', 'Settings'], ['backup', 'Back-up']]]
+    ], section = sections.filter(function (x) { return x[1].some(function (t) { return t[0] === tab; }); })[0];
+    var picker = ps.length ? '<div class="row">' + ps.map(function (p) { return '<button class="btn small ' + (p.id === sel ? '' : 'ghost') + '" data-act="child" data-arg="' + p.id + '">' + esc(p.name) + '</button>'; }).join('') + '</div>' : '<p>No explorers yet.</p>';
+    var openFile = '<label class="btn filebtn">' + I('download', { size: 20 }) + 'Open a file<input type="file" accept=".json,application/json" id="imp" hidden></label>';
     var body = '';
-    if (tab === 'progress') {
+    if (tab === 'child') {
       var c = S.get(sel);
-      body = ps.length ? '<div class="row">' + ps.map(function (p) { return '<button class="btn small ' + (p.id === sel ? '' : 'ghost') + '" data-act="child" data-arg="' + p.id + '">' + esc(p.name) + '</button>'; }).join('') + '</div>' : '<p>No explorers yet.</p>';
+      body = picker;
       if (c) {
-        var regsC = CUR(c).regions, beaten = regsC.filter(function (r) { return guardBeaten(r, c); }).length, mtcBest = c.mtc.filter(function (t) { return (t.year || 4) === yearOf(c); }).reduce(function (m, t) { return Math.max(m, t.score); }, -1);
         body += '<div class="card yearcard"><label class="form">School year for ' + esc(c.name) + '<select id="yearsel">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].filter(function (y) { return OM.CURRICULUM['Y' + y]; }).map(function (y) { return '<option value="' + y + '"' + (y === yearOf(c) ? ' selected' : '') + '>Year ' + y + ' · ' + OM.worldFor(y).name + '</option>'; }).join('') + '</select></label>' +
           '<p class="small-note">Moving up a year starts that year’s adventure. Progress in every year is kept, so you can move back at any time.</p></div>';
+        body += '<div class="card yearcard"><label class="form">Text style for ' + esc(c.name) + '<select id="fontsel"><option value="normal">Standard</option><option value="dyslexia"' + (c.font === 'dyslexia' ? ' selected' : '') + '>Dyslexia-friendly (wider spacing, simpler letters)</option></select></label>' +
+          '<p class="small-note">Used whenever ' + esc(c.name) + ' is playing on this device. The page for choosing a name and this grown-ups’ area stay in the standard style.</p></div>';
         body += '<div class="card yearcard codeset"><h3>' + I('lock', { size: 20 }) + ' Secret code for ' + esc(c.name) + '</h3>' +
           '<label class="chk"><input type="checkbox" id="codeon"' + (codeOn(c) ? ' checked' : '') + '> Ask for ' + esc(c.name) + '’s 3-number secret code when they choose their name</label>' +
           '<p class="small-note">' + (!codeOn(c) ? 'Off: anyone can tap ' + esc(c.name) + '’s name and play.' : c.code ? 'On. ' + esc(c.name) + ' has chosen a code.' : 'On. ' + esc(c.name) + ' will make up a code the next time they choose their name.') +
@@ -1086,6 +1161,38 @@
           '<label class="form">Tier<select id="tiersel"><option value="">Not chosen yet</option>' + OM.GCSE_TIERS.map(function (t) { return '<option value="' + t.id + '"' + (c.tier === t.id ? ' selected' : '') + '>' + t.name + ' (grades ' + t.grades + ')</option>'; }).join('') + '</select></label></div>' +
           '<p class="small-note">' + (bd ? bd.name + ': ' + bd.papers.length + ' papers of ' + (bd.minutes === 90 ? '1 hour 30 minutes' : '2 hours 15 minutes') + ', ' + bd.marks + ' marks each. ' + bd.papers.filter(function (x) { return !x.calc; }).map(function (x) { return x.name; }).join(', ') + ' is non-calculator. ' : '') +
           'Every board teaches the same content, so this only changes the layout of GCSE practice papers in Years 10 and 11. Ask school which board and tier they use. You can change these at any time.</p></div>'; }
+        body += '<div class="card warn"><h3>Remove ' + esc(c.name) + '</h3><p class="small-note">This deletes ' + esc(c.name) + ' and all their progress from this device.</p><button class="btn small ghost" data-act="delp" data-arg="' + c.id + '">Remove ' + esc(c.name) + '</button></div>';
+      }
+    }
+    if (tab === 'limits') {
+      var tc = S.get(sel), lim = tc && (tc.limits || {}), dl = PT.DEFAULTS;
+      var limNum = function (name, val, label, lo, hi) { return '<input class="ptn" type="number" inputmode="numeric" name="' + name + '" min="' + lo + '" max="' + hi + '" value="' + val + '" aria-label="' + label + '">'; };
+      var limRow = function (name, words) { return '<div class="ptrow"><input type="checkbox" name="on_' + name + '" aria-label="Use this limit"' + (lim[name] ? ' checked' : '') + '><span class="ptwords">' + words + '</span></div>'; };
+      body = picker;
+      if (tc) body += '<form class="card ptset" id="ptform"><h3>' + I('timer', { size: 20 }) + ' Play time limits for ' + esc(tc.name) + '</h3>' +
+        '<p>Tick the limits you want. Each child has their own, and anything left unticked has no limit.</p>' +
+        limRow('row', 'No more than ' + limNum('row', lim.row || dl.row, 'Minutes in a row', 1, 600) + ' minutes in a row, then a break of ' + limNum('brk', lim.brk || dl.brk, 'Minutes of break', 1, 240) + ' minutes') +
+        limRow('hour', 'No more than ' + limNum('hour', lim.hour || dl.hour, 'Minutes each hour', 1, 60) + ' minutes each hour') +
+        limRow('span', 'No more than ' + limNum('span', lim.span || dl.span, 'Minutes over several hours', 1, 1440) + ' minutes every ' + limNum('spanH', lim.spanH || dl.spanH, 'Number of hours', 2, 24) + ' hours') +
+        limRow('day', 'No more than ' + limNum('day', lim.day || dl.day, 'Minutes each day', 1, 1440) + ' minutes each day') +
+        '<div class="ptrow ptext"><input type="checkbox" name="ext" aria-label="Allow extra minutes"' + (lim.ext ? ' checked' : '') + '><span class="ptwords">Let ' + esc(tc.name) + ' tap <b>Extend by ' + PT.BONUS_MINS + ' minutes</b> on the Play time limit pop-up, once for each limit. No more extensions are possible after that, until the limit starts again.</span></div>' +
+        '<button class="btn big" type="submit">Save limits for ' + esc(tc.name) + '</button></form>' +
+        '<div class="card ptfree"><h3>' + I('check', { size: 20, stroke: 2.6 }) + ' Tests and practice papers are not limited</h3>' +
+        '<p>The time spent on these never counts towards any limit, and the Play time limit pop-up never appears during one:</p>' +
+        '<ul><li>Practice papers, including SATs-style and GCSE-style papers</li><li>Challenges against the guards</li><li>Topic quizzes</li><li>Times tables checks on the Tables Tree</li><li>Trick Box speed rounds</li><li>11+ timed tests</li></ul>' +
+        '<p>Everything else counts, including lessons, practice, the map and the dressing-up chest. If a limit has been reached, the pop-up appears when ' + esc(tc.name) + ' finishes, and they cannot start another test until they can play again.</p></div>' +
+        '<div class="card"><h3>How time is counted</h3><ul>' +
+        '<li>Time counts only while the app is on screen. It pauses if nobody touches it for ' + PT.IDLE_MS / 60000 + ' minutes.</li>' +
+        '<li>“In a row” starts again after the break you set. Time spent on a test does not count as a break.</li>' +
+        '<li>“Each hour” and “every few hours” start when ' + esc(tc.name) + ' starts playing, and “each day” ends at midnight. The pop-up says when they can play again.</li>' +
+        '<li>Time is counted on this device only, using its clock. This is a simple lock, not security.</li></ul>' +
+        (PT.active(tc) ? '<p><b>' + esc(tc.name) + ' has played for ' + PT.usedToday(tc, Date.now()) + ' minutes today on this device.</b></p><button class="btn small ghost" type="button" data-act="ptreset" data-arg="' + tc.id + '">' + I('refresh', { size: 18 }) + 'Start the counted time again</button> <span class="muted small-note">Use this to give more time now. It also makes the extensions available again.</span>' : '') + '</div>';
+    }
+    if (tab === 'progress') {
+      var c = S.get(sel);
+      body = picker;
+      if (c) {
+        var regsC = CUR(c).regions, beaten = regsC.filter(function (r) { return guardBeaten(r, c); }).length, mtcBest = c.mtc.filter(function (t) { return (t.year || 4) === yearOf(c); }).reduce(function (m, t) { return Math.max(m, t.score); }, -1);
         body += '<div class="statgrid"><div><b>' + c.feathers + '</b>feathers</div><div><b>' + c.days.length + '</b>days practised</div><div><b>' + S.streakDays(c) + '</b>day streak</div><div><b>' + beaten + '/' + regsC.length + '</b>guards beaten</div><div><b>' + (mtcBest < 0 ? '–' : mtcBest + '/25') + '</b>best tables check</div><div><b>' + c.fixIts + '</b>mistakes fixed</div></div>';
         body += '<table class="data-table prog"><thead><tr><th>Objective</th><th>Stars</th><th>Correct</th><th>Answered</th><th>Level now</th><th>Last practised</th></tr></thead><tbody>' +
           regsC.map(function (r) {
@@ -1104,7 +1211,7 @@
     }
     if (tab === 'improve') {
       var ci = S.get(sel);
-      body = (ps.length ? '<div class="row">' + ps.map(function (p) { return '<button class="btn small ' + (p.id === sel ? '' : 'ghost') + '" data-act="child" data-arg="' + p.id + '">' + esc(p.name) + '</button>'; }).join('') + '</div>' : '<p>No explorers yet.</p>') +
+      body = (picker) +
         (ci ? '<h2 class="thead2">How ' + esc(ci.name) + ' is improving</h2>' + OM.trackerHTML(ci, S.totalStars(ci)) : '');
     }
     if (tab === 'review') {
@@ -1125,7 +1232,7 @@
     }
     if (tab === 'certs') {
       var kid = S.get(sel), won = kid ? OM.cert.completed(kid) : [];
-      body = ps.length ? '<div class="row">' + ps.map(function (p) { return '<button class="btn small ' + (p.id === sel ? '' : 'ghost') + '" data-act="child" data-arg="' + p.id + '">' + esc(p.name) + '</button>'; }).join('') + '</div>' : '<p class="muted">No explorers yet.</p>';
+      body = picker;
       if (kid) body += won.length ? won.map(function (v) {
         var st = OM.cert.stats(kid, v), wd = OM.cert.wording(kid, v);
         return '<div class="card certrow"><div><h3>Year ' + v + (wd.date ? ' <small class="muted">' + esc(wd.date) + '</small>' : '') + '</h3><p>' + esc(wd.line) + '.</p><p class="small-note">Stars: ' + st.stars + ' · Feathers: ' + st.feathers + ' · Acorns: ' + st.acorns + '</p></div><button class="btn" data-act="opencert" data-arg="' + kid.id + '|' + v + '">' + I('trophy', { size: 20 }) + 'Open, save or print</button></div>';
@@ -1144,24 +1251,26 @@
         '<div class="card form" id="sndbox"><h3>Sound, voice and motion</h3><p class="small-note">Changes save straight away. Children can also change these with the speaker button at the top of every screen.</p>' + soundControls() + '</div>' +
         '<form class="card form" id="sf"><h3>Other settings</h3>' +
         '<label>On-screen number keypad<select name="keypad"><option value="auto">Automatic (on for tablets)</option><option value="on">Always on</option><option value="off">Off (use the keyboard)</option></select></label>' +
-        '<label>Text style<select name="font"><option value="normal">Standard</option><option value="dyslexia">Dyslexia-friendly (wider spacing, simpler letters)</option></select></label>' +
         '<label class="chk"><input type="checkbox" name="paperTimers"' + (s.paperTimers ? ' checked' : '') + '> Time limits on practice papers</label>' +
         '<div class="row"><button class="btn" type="submit">Save settings</button><button type="button" class="btn ghost" data-act="newpin">Change PIN</button></div></form>';
     }
-    if (tab === 'data') {
-      var lastB = s.lastBackup ? 'Last full backup: <b>' + new Date(s.lastBackup).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '</b>.' : '<b>No full backup made yet on this device.</b>';
-      body = '<div class="card movecard"><h3>' + I('upload', { size: 20 }) + ' Move a child to another device</h3>' +
+    if (tab === 'move') {
+      var mc = S.get(sel);
+      body = picker + (mc ? '<div class="card movecard"><h3>' + I('upload', { size: 20 }) + ' Move ' + esc(mc.name) + ' to another device</h3>' +
         '<p class="small-note">Their progress, stars, acorns, outfits, tests and improvement record go with them. Nothing passes through the internet: you send the file yourself, or the other device scans codes from this screen.</p>' +
-        (ps.length ? '<ul class="movelist">' + ps.map(function (p) { return '<li><span>' + avatar(40, p) + '<b>' + esc(p.name) + '</b> <small>Year ' + p.year + '</small></span><span class="row">' +
-          '<button class="btn small" data-act="sendfile" data-arg="' + p.id + '">' + I('upload', { size: 18 }) + 'Share as a file</button>' +
-          '<button class="btn small ghost" data-act="sendqr" data-arg="' + p.id + '">' + I('qr', { size: 18 }) + 'Show QR codes</button></span></li>'; }).join('') + '</ul>' : '<p class="muted">No explorers yet.</p>') + '</div>' +
+        '<div class="row"><button class="btn small" data-act="sendfile" data-arg="' + mc.id + '">' + I('upload', { size: 18 }) + 'Share as a file</button>' +
+        '<button class="btn small ghost" data-act="sendqr" data-arg="' + mc.id + '">' + I('qr', { size: 18 }) + 'Show QR codes</button></div></div>' : '') +
         '<div class="card movecard"><h3>' + I('download', { size: 20 }) + ' Add a child from another device</h3>' +
-        '<p class="small-note">Open the file you were sent (or a full backup), or scan the QR codes shown on the other device. You will see what is in it first, then choose to add the child or combine them with the same child here. Combining never loses anything.</p>' +
-        '<div class="row"><label class="btn filebtn">' + I('download', { size: 20 }) + 'Open a file<input type="file" accept=".json,application/json" id="imp" hidden></label>' +
-        '<button class="btn ghost" data-act="scanqr">' + I('qr', { size: 20 }) + 'Scan QR codes</button></div></div>' +
-        '<div class="card"><h3>Back up everyone</h3><p>Progress is saved in this browser on this device only. A full backup file keeps every explorer safe if the device is lost or the browser data is cleared. ' + lastB + '</p>' +
-        '<button class="btn" data-act="export">' + I('download', { size: 20 }) + 'Download full backup</button><p class="small-note">To restore it, use <b>Open a file</b> above: each explorer is added, or combined with the same explorer already here.</p></div>' +
-        '<div class="card warn"><h3>Remove an explorer</h3>' + ps.map(function (p) { return '<button class="btn small ghost" data-act="delp" data-arg="' + p.id + '">Remove ' + esc(p.name) + '</button>'; }).join(' ') + '</div>';
+        '<p class="small-note">Open the file you were sent (or a full back-up), or scan the QR codes shown on the other device. You will see what is in it first, then choose to add the child or combine them with the same child here. Combining never loses anything.</p>' +
+        '<div class="row">' + openFile + '<button class="btn ghost" data-act="scanqr">' + I('qr', { size: 20 }) + 'Scan QR codes</button></div></div>';
+    }
+    if (tab === 'backup') {
+      var lastB = s.lastBackup ? 'Last back-up: <b>' + new Date(s.lastBackup).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '</b>.' : '<b>No back-up made yet on this device.</b>';
+      body = '<div class="card"><h3>' + I('download', { size: 20 }) + ' Back up everyone</h3><p>Progress is saved in this browser on this device only. A back-up file keeps every explorer safe if the device is lost or the browser data is cleared. ' + lastB + '</p>' +
+        '<button class="btn" data-act="export">' + I('download', { size: 20 }) + 'Save a back-up now</button></div>' +
+        '<div class="card"><label class="form">How often to back up<select id="backupsel">' + [['daily', 'Every day'], ['weekly', 'Every week'], ['monthly', 'Every month'], ['off', 'I will do it myself (no reminders)']].map(function (o) { return '<option value="' + o[0] + '"' + (s.backupEvery === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+        '<p class="small-note">When a back-up is due, a reminder appears on the page where children choose their name, and here in the grown-ups’ area. One tap saves the file. The app cannot save a file while it is closed, or without someone tapping, so please keep each file somewhere safe, away from this device if you can.</p></div>' +
+        '<div class="card"><h3>Restore from a back-up</h3><p class="small-note">Each explorer in the file is added, or combined with the same explorer already here. Combining never loses anything.</p>' + openFile + '</div>';
     }
     if (tab === 'about') {
       var gensN = Object.keys(OM.gens).length, objN = Object.keys(OM.objectiveIndex).length;
@@ -1175,44 +1284,54 @@
         '<li>The automated checker (<code>tests/run-checks.js</code>) generates tens of thousands of questions and fails if any answer is wrong, any limit is broken or any objective is missing content. The latest report is in <code>tests/content-report.md</code>.</li></ul>' +
         '<h3>What still needs a person</h3><p>No automated check is perfect. Please use “Check the content” to look over topics, and look at anything your child reports.</p><p class="small-note">' + OM.APP_NAME + ' · ' + (OM.versionText ? OM.versionText() : '') + ' · © 2026 Neil Mayes.</p></div>';
     }
-    // remind grown-ups to back up once there is progress worth keeping (none yet, or more than 30 days ago)
-    var hasProgress = ps.some(function (p) { return p.days.length > 0; }), stale = !s.lastBackup || Date.now() - s.lastBackup > 30 * 86400000;
-    var nudge = hasProgress && stale && tab !== 'data' ? '<div class="card backupnudge"><span>' + I('download', { size: 22 }) + '</span><p>' + (s.lastBackup ? 'It is over a month since the last backup.' : 'No backup has been made yet.') +
-      ' Progress is only saved on this device, so a backup file keeps it safe if the device is lost or the browser data is cleared.</p><button class="btn small" data-act="tab" data-arg="data">Make a backup</button></div>' : '';
-    mount(header('Grown-ups’ area', { icon: 'lock' }) + '<main class="parent">' + nudge + '<nav class="tabs">' + tabs.map(function (t) { return '<button class="tab ' + (t[0] === tab ? 'on' : '') + '" data-act="tab" data-arg="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' + body + '</main>', {
-      tab: function (t) { App.go('parent', { ok: true, tab: t }, true); },
-      child: function (id) { App.go('parent', { ok: true, tab: tab === 'improve' ? 'improve' : 'progress', child: id }, true); },
+    var nudge = S.backupDue(Date.now()) && tab !== 'backup' ? '<div class="card backupnudge"><span>' + I('download', { size: 22 }) + '</span><p>' + backupWords() + ' Progress is only saved on this device, so a back-up file keeps it safe if the device is lost or the browser data is cleared.</p><button class="btn small" data-act="tab" data-arg="backup">Make a back-up</button></div>' : '';
+    mount(header('Grown-ups’ area', { icon: 'lock' }) + '<main class="parent">' + nudge + '<nav class="tabs">' + sections.map(function (x) { return '<button class="tab ' + (x === section ? 'on' : '') + '" data-act="tab" data-arg="' + x[1][0][0] + '">' + x[0] + '</button>'; }).join('') + '</nav>' +
+      '<nav class="tabs subtabs">' + section[1].map(function (t) { return '<button class="tab ' + (t[0] === tab ? 'on' : '') + '" data-act="tab" data-arg="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</nav>' + body + '</main>', {
+      tab: function (t) { App.go('parent', { ok: true, tab: t, child: sel }, true); },
+      child: function (id) { App.go('parent', { ok: true, tab: tab, child: id }, true); },
+      ptreset: function (id) { PT.reset(S.get(id)); S.save(); toast('Counted time started again.'); App.go('parent', { ok: true, tab: 'limits', child: id }, true); },
       more: function () { App.go('parent', { ok: true, tab: 'review', obj: pr.obj, seed: OM.newSeed() }, true); },
       opencert: function (v) { var q = String(v).split('|'); App.go('certificate', { child: q[0], year: +q[1] }); },
       delrep: function (k) { S.data.reports.splice(+k, 1); S.save(); App.go('parent', { ok: true, tab: 'reports' }, true); },
       testvoice: function () { OM.say('Hoo hoo! What is 7 times 8?', { force: true }); },
       newpin: function () { s.pin = null; S.save(); App.go('parent', {}, true); },
-      export: function () { s.lastBackup = Date.now(); S.save(); var b = new Blob([S.exportJSON()], { type: 'application/json' }), a = doc.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'owl-maths-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); },
-      resetcode: function (id) { var rc = S.get(id); if (G.confirm('Reset ' + rc.name + '’s secret code? They will make up a new one the next time they choose their name.')) { rc.code = null; S.save(); toast('Code reset.'); App.go('parent', { ok: true, tab: 'progress', child: id }, true); } },
+      export: function () { saveBackup(); App.go('parent', { ok: true, tab: 'backup', child: sel }, true); },
+      resetcode: function (id) { var rc = S.get(id); if (G.confirm('Reset ' + rc.name + '’s secret code? They will make up a new one the next time they choose their name.')) { rc.code = null; S.save(); toast('Code reset.'); App.go('parent', { ok: true, tab: 'child', child: id }, true); } },
       sendfile: function (id) { OM.transfer.shareFile(S.childExport(id)).then(function (how) { if (how === 'downloaded') toast('Saved the file. Send it to the other device, then open it there.'); else if (how === 'shared') toast('Sent. Open the file on the other device.'); }); },
       sendqr: function (id) { OM.transfer.showQR(S.childExport(id)).catch(function () { toast('The QR codes could not be made on this device. Use “Share as a file” instead.'); }); },
-      scanqr: function () { OM.transfer.scan(function (obj) { OM.transfer.review(obj, function (msg) { toast(msg); App.go('parent', { ok: true, tab: 'data' }, true); }); }); },
-      delp: function (id) { var p = S.get(id); if (G.confirm('Remove ' + p.name + ' and all their progress? This cannot be undone.')) { S.removeProfile(id); App.go('parent', { ok: true, tab: 'data' }, true); } }
+      scanqr: function () { OM.transfer.scan(function (obj) { OM.transfer.review(obj, function (msg) { toast(msg); App.go('parent', { ok: true, tab: tab, child: sel }, true); }); }); },
+      delp: function (id) { var p = S.get(id); if (G.confirm('Remove ' + p.name + ' and all their progress? This cannot be undone.')) { S.removeProfile(id); App.go('parent', { ok: true, tab: 'child' }, true); } }
     });
     if (tab === 'improve' && OM.bindTrackerTips) OM.bindTrackerTips(root);
+    var bsel = doc.getElementById('backupsel');
+    if (bsel) bsel.onchange = function () { s.backupEvery = bsel.value; S.save(); toast('Saved.'); };
+    var ptf = doc.getElementById('ptform');
+    if (ptf) ptf.onsubmit = function (e) {
+      e.preventDefault(); var c = S.get(sel), f = ptf.elements, on = function (k) { return f['on_' + k].checked ? f[k].value : null; };
+      if (!ptf.reportValidity()) return;
+      c.limits = PT.clean({ row: on('row'), brk: f.brk.value, hour: on('hour'), span: on('span'), spanH: f.spanH.value, day: on('day'), ext: f.ext.checked });
+      S.save(); toast('Limits saved for ' + esc(c.name) + '.'); App.go('parent', { ok: true, tab: 'limits', child: c.id }, true);
+    };
     var objsel = doc.getElementById('objsel'); if (objsel) objsel.onchange = function () { App.go('parent', { ok: true, tab: 'review', obj: objsel.value }, true); };
-    ['boardsel', 'tiersel'].forEach(function (id) { var el = doc.getElementById(id); if (el) el.onchange = function () { var c = S.get(sel); c[id === 'boardsel' ? 'board' : 'tier'] = el.value || null; S.save(); toast('Saved.'); App.go('parent', { ok: true, tab: 'progress', child: c.id }, true); }; });
+    ['boardsel', 'tiersel'].forEach(function (id) { var el = doc.getElementById(id); if (el) el.onchange = function () { var c = S.get(sel); c[id === 'boardsel' ? 'board' : 'tier'] = el.value || null; S.save(); toast('Saved.'); App.go('parent', { ok: true, tab: 'child', child: c.id }, true); }; });
     var con = doc.getElementById('codeon');
-    if (con) con.onchange = function () { var c = S.get(sel); c.codeOn = con.checked; S.save(); toast(con.checked ? 'Secret code turned on for ' + esc(c.name) + '.' : 'Secret code turned off for ' + esc(c.name) + '.'); App.go('parent', { ok: true, tab: 'progress', child: c.id }, true); };
+    if (con) con.onchange = function () { var c = S.get(sel); c.codeOn = con.checked; S.save(); toast(con.checked ? 'Secret code turned on for ' + esc(c.name) + '.' : 'Secret code turned off for ' + esc(c.name) + '.'); App.go('parent', { ok: true, tab: 'child', child: c.id }, true); };
+    var fsel = doc.getElementById('fontsel');
+    if (fsel) fsel.onchange = function () { var c = S.get(sel); if (fsel.value === 'dyslexia') c.font = 'dyslexia'; else delete c.font; S.save(); toast('Text style saved for ' + esc(c.name) + '.'); };
     var ysel = doc.getElementById('yearsel');
-    if (ysel) ysel.onchange = function () { var c = S.get(sel); c.year = +ysel.value; S.save(); toast(esc(c.name) + ' is now in Year ' + c.year + '.'); App.go('parent', { ok: true, tab: 'progress', child: c.id }, true); };
+    if (ysel) ysel.onchange = function () { var c = S.get(sel); c.year = +ysel.value; S.save(); toast(esc(c.name) + ' is now in Year ' + c.year + '.'); App.go('parent', { ok: true, tab: 'child', child: c.id }, true); };
     var offbox = doc.getElementById('offbox');
     if (offbox) fillOfflineCard(offbox);
     var sndbox = doc.getElementById('sndbox');
     if (sndbox) bindSoundControls(sndbox, refreshSoundBtns);
     var sf = doc.getElementById('sf');
     if (sf) {
-      sf.keypad.value = s.keypad; sf.font.value = s.font;
-      sf.onsubmit = function (e) { e.preventDefault(); s.keypad = sf.keypad.value; s.font = sf.font.value; s.paperTimers = sf.paperTimers.checked; S.save(); applyFont(); toast('Settings saved.'); };
+      sf.keypad.value = s.keypad;
+      sf.onsubmit = function (e) { e.preventDefault(); s.keypad = sf.keypad.value; s.paperTimers = sf.paperTimers.checked; S.save(); applyFont(); toast('Settings saved.'); };
     }
     var imp = doc.getElementById('imp');
     // any file: one child or a full backup; review it, then add or combine each explorer
-    if (imp) imp.onchange = function () { var f = imp.files[0]; if (!f) return; OM.transfer.readFile(f).then(function (obj) { OM.transfer.review(obj, function (msg) { toast(msg); App.go('parent', { ok: true, tab: 'data' }, true); }); }).catch(function () { toast('That file could not be read. Choose a Mayes Maths & More file.'); }); imp.value = ''; };
+    if (imp) imp.onchange = function () { var f = imp.files[0]; if (!f) return; OM.transfer.readFile(f).then(function (obj) { OM.transfer.review(obj, function (msg) { toast(msg); App.go('parent', { ok: true, tab: tab, child: sel }, true); }); }).catch(function () { toast('That file could not be read. Choose a Mayes Maths & More file.'); }); imp.value = ''; };
   };
 
   // the grown-ups' "Using it offline" card: is the app saved, is Pip's voice saved (and a button to download it), is progress kept
@@ -1242,7 +1361,7 @@
     });
   }
 
-  function applyFont() { doc.body.classList.toggle('dyslexia', S.settings().font === 'dyslexia'); }
+  function applyFont() { doc.body.classList.toggle('dyslexia', !!App.profile && App.profile.font === 'dyslexia'); } // each child's own; pages with no child chosen use the standard style
   function applyMotion() { var m = S.settings().motion || 'auto'; doc.body.classList.toggle('motion-on', m === 'on'); doc.body.classList.toggle('motion-off', m === 'off'); }
   applyFont(); applyMotion();
   // Opening splash: the logo appears large on navy with the letter as a sigma (Σ), which swings a quarter-turn into the M;

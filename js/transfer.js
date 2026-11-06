@@ -1,5 +1,5 @@
 /* Mayes Maths & More — moving a child's progress to another device, with no internet and no server.
-   Two ways, both from Grown-ups' area → Backup & move:
+   Two ways, both from Grown-ups' area → Child settings → Move a child:
    - a FILE: Share (AirDrop, WhatsApp, email to yourself, Google Drive…) or download, then open it on the other device;
    - QR CODES: this device shows a short looping sequence of QR codes; the other device scans them with its camera.
    Either way the other device shows what it has received and the grown-up chooses to add it as a new explorer or to
@@ -87,7 +87,7 @@
   OM.transfer.shareFile = function (obj) {
     var name = fileName(obj), file = new File([JSON.stringify(obj)], name, { type: 'application/json' });
     if (G.navigator.canShare && G.navigator.canShare({ files: [file] })) {
-      return G.navigator.share({ files: [file], title: 'Mayes Maths & More: ' + obj.child.name + '’s progress', text: 'Open this in Mayes Maths & More: Grown-ups’ area → Backup & move → Open a file.' })
+      return G.navigator.share({ files: [file], title: 'Mayes Maths & More: ' + obj.child.name + '’s progress', text: 'Open this in Mayes Maths & More: Grown-ups’ area → Child settings → Move a child → Open a file.' })
         .then(function () { return 'shared'; }).catch(function (e) { if (e && e.name === 'AbortError') return 'cancelled'; return download(file); });
     }
     return Promise.resolve(download(file));

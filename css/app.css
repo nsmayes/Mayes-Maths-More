@@ -213,7 +213,7 @@ input.ans:disabled { background: #f4f7f6; color: var(--muted); }
 input.ans.wide { width: 12em; } input.ans.blank { width: 5.5em; margin: 4px; } input.ans.small { width: 3.4em; }
 select.ans { border: 2px solid var(--line-2); border-radius: var(--r-ctl); padding: 10px; font-size: 1.1em; min-height: 56px; background: #fff; margin: 4px; }
 .ansline { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 1.3em; font-weight: 600; }
-.template { font-size: 1.3em; line-height: 2.5; }
+.template { font-size: 1.3em; line-height: 2.5; } .template input.ans { line-height: 1.2; }
 .fbtop { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
 .fbtop .fbh { margin: 0; }
 .fbtop .nextbtn { margin-left: auto; }
@@ -906,7 +906,7 @@ label.ansline { max-width: 100%; } label.ansline input.ans { min-width: 0; flex:
   .nvr-row svg { width: 70px; height: auto; }
 }
 @media (max-width: 700px) { .ttiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .ttile { padding: 8px 10px; } .ttile b { font-size: 1.35em; } }
-@media (max-width: 700px) { .tplot { overflow-x: auto; -webkit-overflow-scrolling: touch; } .tplot svg { min-width: 600px; } .tplot .ttip { position: sticky; } }
+@media (max-width: 700px) { .ttip { white-space: normal; width: max-content; max-width: 100%; } }
 #objsel, .parent select { max-width: 100%; } .parent label { max-width: 100%; }
 
 /* ---------- moving a child to another device (js/transfer.js) ---------- */
@@ -956,3 +956,23 @@ svg.char { overflow: visible; }
 .certbtns { justify-content: center; flex-wrap: wrap; gap: 10px; }
 .certrow { display: flex; align-items: center; justify-content: space-between; gap: 12px 18px; flex-wrap: wrap; }
 .certrow h3 { margin: 0 0 4px; } .certrow p { margin: 4px 0; } .certrow > div { flex: 1 1 280px; }
+
+/* ---------- play time limits ---------- */
+.ptover { position: fixed; inset: 0; z-index: 1500; display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto; background: rgba(14, 42, 47, .78); }
+.ptcard { max-width: 460px; width: 100%; margin: auto; text-align: center; }
+.ptcard h2 { margin: 6px 0; } .ptcard .bigtext { margin: 8px 0; }
+.ptbtns { justify-content: center; margin: 10px 0; }
+.ptset h3, .ptfree h3 { display: flex; align-items: center; gap: 6px; margin-top: 0; }
+.ptrow { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--hair); }
+.ptrow > input[type=checkbox] { flex: none; width: 24px; height: 24px; margin-top: 8px; accent-color: var(--moss); }
+.ptwords { line-height: 2.6; min-width: 0; } .ptext .ptwords { line-height: 1.5; margin-top: 8px; }
+.ptn { width: 4.4em; min-height: 40px; padding: 4px 8px; margin: 0 2px; text-align: center; font: inherit; border: 1.5px solid var(--line-2); border-radius: var(--r-ctl); background: #fbfdfc; }
+.ptset .btn.big { margin-top: 12px; }
+.ptfree { border: 2px solid var(--moss); }
+
+/* ---------- grown-ups' area: the pages within a section; the back-up reminder on the first page ---------- */
+.subtabs { background: transparent; padding: 0; }
+.subtabs .tab { min-height: 40px; padding: 6px 12px; font-size: .94em; border: 1.5px solid var(--line); background: #fff; }
+.subtabs .tab.on { background: var(--ink); color: #fff; border-color: var(--ink); box-shadow: none; }
+.backupnudge { flex-wrap: wrap; } .backupnudge p { flex: 1 1 220px; }
+.homebackup { max-width: 620px; margin: 18px auto; color: var(--ink); }

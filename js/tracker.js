@@ -82,11 +82,12 @@
   var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
   function shortDate(k) { var d = fromKey(k); return d.getDate() + ' ' + MONTHS[d.getMonth()]; }
+  function phone() { return typeof innerWidth === 'number' && innerWidth <= 700; } // charts are drawn narrower to fit, so the words stay readable
   function niceMax(v) { if (v <= 5) return 5; var p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return (m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; }
 
   // one series, one hue; every bar has its own hover tooltip (a bigger invisible hit area) and the numbers are also in a table
   function barChart(items, o) {
-    var W = 680, H = 190, L = 40, R = 10, T = 14, B = 34, n = items.length, max = niceMax(Math.max.apply(null, items.map(function (x) { return x.v || 0; }).concat([o.min || 1]))),
+    var W = phone() ? 360 : 680, H = 190, L = 40, R = 10, T = 14, B = 34, n = items.length, max = niceMax(Math.max.apply(null, items.map(function (x) { return x.v || 0; }).concat([o.min || 1]))),
       bw = (W - L - R) / n, b = '';
     [0, 0.5, 1].forEach(function (f) { var y = T + (H - T - B) * (1 - f); b += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="' + GRID + '" stroke-width="1"/><text x="' + (L - 6) + '" y="' + (y + 4) + '" font-size="11" text-anchor="end" fill="' + MUTED + '">' + (o.fmt ? o.fmt(max * f) : Math.round(max * f)) + '</text>'; });
     items.forEach(function (x, i) {
@@ -101,7 +102,7 @@
   }
   // a percentage over time: 2px line through the days that have data, with 8px markers; 0–100% axis
   function lineChart(items, o) {
-    var W = 680, H = 170, L = 40, R = 10, T = 14, B = 34, n = items.length, bw = (W - L - R) / n, b = '', pts = [], segs = [[]];
+    var W = phone() ? 360 : 680, H = 170, L = 40, R = 10, T = 14, B = 34, n = items.length, bw = (W - L - R) / n, b = '', pts = [], segs = [[]];
     [0, 50, 100].forEach(function (v) { var y = T + (H - T - B) * (1 - v / 100); b += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="' + GRID + '" stroke-width="1"/><text x="' + (L - 6) + '" y="' + (y + 4) + '" font-size="11" text-anchor="end" fill="' + MUTED + '">' + v + '%</text>'; });
     items.forEach(function (x, i) {
       var cx = L + bw * i + bw / 2;
@@ -143,7 +144,7 @@
       '<div class="ttiles">' + tile('Questions answered', tw.a, ls.a) + tile('Right first time', tw.acc, ls.acc, '%') + tile('At harder levels', tw.hardPct, ls.hardPct, '%') + tile('New stars', tw.g, ls.g) +
       tile('Days practised', tw.days, ls.days) + tile('Minutes practising', tw.mins, ls.mins) + tile('Topics practised', tw.topicN, ls.topicN) + tile('Test average', tw.testAvg, ls.testAvg, '%') + '</div></div>';
     // daily: last 14 days
-    var dItems = im.daily.map(function (d) { var dt = fromKey(d.key); return { lab: DAYS[dt.getDay()], lab2: dt.getDate() + '', strong: d.key === im.today, d: d }; });
+    var dItems = im.daily.map(function (d) { var dt = fromKey(d.key); return { lab: phone() ? DAYS[dt.getDay()].charAt(0) : DAYS[dt.getDay()], lab2: dt.getDate() + '', strong: d.key === im.today, d: d }; });
     h += '<div class="card"><h3>Day by day <small>(last 14 days)</small></h3>' +
       barChart(dItems.map(function (x) { return Object.assign({ v: x.d.a, tip: shortDate(x.d.key) + ': ' + plural(x.d.a, 'question') + (x.d.a ? ', ' + x.d.c + ' right first time' : '') + (x.d.mins ? ', ' + x.d.mins + ' min' : '') }, x); }), { title: 'Questions answered each day' }) +
       lineChart(dItems.map(function (x) { return Object.assign({ v: x.d.acc, tip: shortDate(x.d.key) + ': ' + (x.d.acc === null ? 'no practice' : x.d.acc + '% right first time (' + x.d.c + ' of ' + x.d.a + ')') }, x); }), { title: 'Right first time each day (%)' }) +
@@ -167,9 +168,8 @@
   OM.bindTrackerTips = function (root) {
     root.querySelectorAll('.tplot').forEach(function (pl) {
       var tip = pl.querySelector('.ttip');
-      pl.scrollLeft = pl.scrollWidth; // on a phone the chart scrolls: start at the most recent days
       pl.querySelectorAll('.hit').forEach(function (r) {
-        var showTip = function () { var box = pl.getBoundingClientRect(), rb = r.getBoundingClientRect(); tip.textContent = r.getAttribute('data-tip'); tip.hidden = false; var x = rb.left - box.left + rb.width / 2; tip.style.left = Math.max(70, Math.min(box.width - 70, x)) + 'px'; pl.querySelectorAll('.hit.on').forEach(function (e) { e.classList.remove('on'); }); r.classList.add('on'); };
+        var showTip = function () { var box = pl.getBoundingClientRect(), rb = r.getBoundingClientRect(); tip.textContent = r.getAttribute('data-tip'); tip.hidden = false; var x = rb.left - box.left + rb.width / 2, half = Math.min(tip.offsetWidth / 2, box.width / 2); tip.style.left = Math.max(half, Math.min(box.width - half, x)) + 'px'; pl.querySelectorAll('.hit.on').forEach(function (e) { e.classList.remove('on'); }); r.classList.add('on'); };
         r.addEventListener('mouseenter', showTip); r.addEventListener('focus', showTip);
         r.addEventListener('mouseleave', function () { tip.hidden = true; r.classList.remove('on'); });
       });

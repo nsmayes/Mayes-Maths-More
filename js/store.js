@@ -2,12 +2,14 @@
 (function (G) {
   'use strict';
   var OM = G.OM, KEY = 'owlmaths.v1';
-  var blank = function () { return { profiles: [], settings: { pin: null, readAloud: 'auto', rate: 0.95, keypad: 'auto', font: 'normal', sounds: true, muted: false, voice: null, motion: 'on', paperTimers: true }, reports: [] }; };
+  var blank = function () { return { profiles: [], settings: { pin: null, readAloud: 'auto', rate: 0.95, keypad: 'auto', sounds: true, muted: false, voice: null, motion: 'on', paperTimers: true, backupEvery: 'monthly' }, reports: [] }; };
   var data = blank();
   try { var raw = G.localStorage && G.localStorage.getItem(KEY); if (raw) data = Object.assign(blank(), JSON.parse(raw)); } catch (e) { /* private window or blocked storage: run without saving */ }
   data.settings = Object.assign(blank().settings, data.settings || {});
   // animations are on unless a grown-up has chosen otherwise (earlier versions followed the device setting by default)
   if (!data.settings.motionChosen) data.settings.motion = 'on';
+  // the text style used to be one setting for everyone: each child keeps what was chosen
+  if (data.settings.font) { if (data.settings.font === 'dyslexia') data.profiles.forEach(function (q) { if (!q.font) q.font = 'dyslexia'; }); delete data.settings.font; }
 
   // ---------- checking a child's record that came from another device ----------
   // A file or set of QR codes could have been edited by hand, so the record is rebuilt from scratch: only the parts the
@@ -38,6 +40,8 @@
     if (c.rate !== undefined) o.rate = num(c.rate, 0.5, 2, 0.95);
     if (/^\d{3}$/.test(String(c.code))) o.code = String(c.code);
     if (typeof c.codeOn === 'boolean') o.codeOn = c.codeOn;
+    if (c.font === 'dyslexia') o.font = 'dyslexia';
+    if (c.limits && OMx.playtime) o.limits = OMx.playtime.clean(c.limits);
     ['feathers', 'acorns', 'fixIts'].forEach(function (k) { o[k] = int(c[k], 0, 1e7, 0); });
     ['introSeen', 'escaped'].forEach(function (k) { o[k] = !!c[k]; });
     o.created = num(c.created, 0, 4e12, Date.now());
@@ -197,6 +201,7 @@
       t.year = Math.max(t.year || 1, c.year || 1);
       if (!t.code && c.code) t.code = c.code;
       if (!t.board && c.board) t.board = c.board;
+      if (!t.font && c.font) t.font = c.font;
       if (!t.tier && c.tier) t.tier = c.tier;
       Store.save(); return t;
     },
@@ -214,6 +219,14 @@
     earn: function (p, feathers, acorns) {
       var led = Store.ledger(p), y = p.year || 4, e = led[y] || (led[y] = { f: 0, a: 0 });
       e.f += feathers || 0; e.a += acorns || 0;
+    },
+    // a back-up is due once there is progress worth keeping, and none has been made within the time-frame a grown-up chose
+    backupDue: function (now) {
+      var n = { daily: 1, weekly: 7, monthly: 30 }[data.settings.backupEvery], last = data.settings.lastBackup;
+      if (!n || !data.profiles.some(function (p) { return p.days.length > 0; })) return false;
+      if (!last) return true;
+      var day = function (t) { var d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+      return Math.round((day(now) - day(last)) / 86400000) >= n;
     },
     exportJSON: function () { return JSON.stringify(data, null, 2); }
   };

@@ -17,7 +17,7 @@
       var blanks = r.sample([1, 2, 3, 4, 5], 2).sort();
       var tpl = terms.map(function (t, i) { var b = blanks.indexOf(i); return b >= 0 ? '{' + b + '}' : String(t); }).join(', ');
       return K.multi('Count ' + (down ? 'back' : 'on') + ' in <b>' + step + 's</b>. Fill in the missing numbers.', tpl, blanks.map(function (b) { return { kind: 'int', value: terms[b] }; }),
-        { hint: 'Each number is ' + step + ' ' + (down ? 'less' : 'more') + ' than the one before.', params: { terms: terms, step: step, down: down, blanks: blanks }, answer: blanks.map(function (b) { return terms[b]; }).join(' and '), sol: ['The numbers go: ' + terms.join(', ') + '.'] });
+        { blanks: blanks.map(function () { return { keys: 'digits', small: true }; }), hint: 'Each number is ' + step + ' ' + (down ? 'less' : 'more') + ' than the one before.', params: { terms: terms, step: step, down: down, blanks: blanks }, answer: blanks.map(function (b) { return terms[b]; }).join(' and '), sol: ['The numbers go: ' + terms.join(', ') + '.'] });
     },
     verify: function (q) { var p = q.params; return p.blanks.every(function (b, i) { return q.check.parts[i].value === p.terms[0] + (p.down ? -1 : 1) * p.step * b; }); } });
 
