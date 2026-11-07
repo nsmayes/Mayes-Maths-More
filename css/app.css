@@ -962,6 +962,8 @@ svg.char { overflow: visible; }
 .ptover { position: fixed; inset: 0; z-index: 1500; display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto; background: rgba(14, 42, 47, .78); }
 .ptcard { max-width: 460px; width: 100%; margin: auto; text-align: center; }
 .ptcard h2 { margin: 6px 0; } .ptcard .bigtext { margin: 8px 0; }
+.gentle .ptbtns { justify-content: center; gap: 10px; margin-top: 10px; }
+.gentle .treeart { display: grid; place-items: center; width: 96px; height: 96px; margin: 0 auto; border-radius: 50%; background: #e3f1dc; color: #2f7a5f; }
 .ptbtns { justify-content: center; margin: 10px 0; }
 .ptset h3, .ptfree h3 { display: flex; align-items: center; gap: 6px; margin-top: 0; }
 .ptrow { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--hair); }

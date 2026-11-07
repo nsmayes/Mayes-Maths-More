@@ -6,7 +6,10 @@
 (function (G) {
   'use strict';
   var OM = G.OM = G.OM || {}, HOUR = 3600000, MIN = 60000;
-  var PT = OM.playtime = { BONUS_MINS: 3, IDLE_MS: 5 * MIN, KINDS: ['row', 'hour', 'span', 'day'], DEFAULTS: { row: 30, brk: 10, hour: 45, span: 90, spanH: 3, day: 60 } };
+  // NUDGE_MINS: Pip suggests a break after this long in a row, for every child, limits or not.
+  // START: what a new child starts with (a grown-up can change it or switch it off). ACORNS_A_DAY: the most a child can earn in a day.
+  var PT = OM.playtime = { BONUS_MINS: 3, IDLE_MS: 5 * MIN, KINDS: ['row', 'hour', 'span', 'day'], DEFAULTS: { row: 30, brk: 10, hour: 45, span: 90, spanH: 3, day: 60 },
+    NUDGE_MINS: 15, START: { day: 30, ext: true }, ACORNS_A_DAY: 50 };
   function whole(v, lo, hi) { v = Math.round(Number(v)); return isFinite(v) && v >= lo ? Math.min(v, hi) : null; }
   function dayKey(now) { var d = new Date(now); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function midnight(now) { var d = new Date(now); return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime(); }
@@ -59,5 +62,20 @@
     return true;
   };
   PT.usedToday = function (p, now) { return Math.floor(roll(p, now).day.u / 60); };
+  // time for Pip to suggest a break: long enough in a row, not suggested yet this time, and no in-a-row limit that will come first
+  PT.nudgeDue = function (p, now) {
+    var s = roll(p, now), l = p.limits || {};
+    if (l.row && l.row <= PT.NUDGE_MINS) return false;
+    return !s.row.nudged && s.row.u >= PT.NUDGE_MINS * 60;
+  };
+  PT.nudged = function (p, now) { roll(p, now).row.nudged = true; };
+  // acorns: how many more can be earned today, and taking some from what is left
+  PT.acornsLeft = function (p, now) {
+    var k = dayKey(now); if (!p.acornDay || p.acornDay.d !== k) p.acornDay = { d: k, n: 0 };
+    return Math.max(0, PT.ACORNS_A_DAY - p.acornDay.n);
+  };
+  PT.takeAcorns = function (p, want, now) {
+    var give = Math.max(0, Math.min(want || 0, PT.acornsLeft(p, now))); p.acornDay.n += give; return give;
+  };
   PT.reset = function (p) { p.pt = blank(); };
 })(typeof window !== 'undefined' ? window : globalThis);

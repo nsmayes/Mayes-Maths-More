@@ -102,6 +102,8 @@
     addProfile: function (name, year, owlName, colour) {
       var p = { id: newId(), name: name, year: year, owlName: owlName || 'Pip', colour: colour || 'brown', feathers: 0, acorns: 5,
         owned: [], wearing: {}, progress: {}, tests: [], guards: {}, mtc: [], days: [], fixIts: 0, introSeen: false, escaped: false, created: Date.now() };
+      // every new child starts with a daily play time limit, which a grown-up can change or switch off
+      if (OM.playtime) p.limits = OM.playtime.clean(OM.playtime.START);
       data.profiles.push(p); Store.save(); return p;
     },
     removeProfile: function (id) { data.profiles = data.profiles.filter(function (p) { return p.id !== id; }); Store.save(); },

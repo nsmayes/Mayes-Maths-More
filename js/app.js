@@ -91,10 +91,27 @@
   }
   function reward(feathers, acorns, why) {
     var p = App.profile; if (!p) return;
+    if (acorns) { var wanted = acorns; acorns = OM.playtime.takeAcorns(p, acorns, Date.now()); if (acorns < wanted) bareTree(p); }
     S.earn(p, feathers, acorns); p.feathers += feathers || 0; p.acorns += acorns || 0; S.save();
     var b = doc.querySelector('.stat-f'); if (b) b.textContent = p.feathers;
     var a = doc.querySelector('.stat-a'); if (a) a.textContent = p.acorns;
     if (acorns) toast(I('acorn', { size: 18 }) + ' +' + acorns + ' acorn' + (acorns > 1 ? 's' : '') + (why ? ' — ' + why : ''), 'gold');
+  }
+  // all the acorns for today have been earned: said once a day, kindly, and the child can carry on for feathers and stars
+  function bareTree(p) {
+    if (p.acornDay.told) return;
+    p.acornDay.told = true; S.save();
+    gentlePop('acornTree', '<h2 id="gpTitle">The acorn tree is bare!</h2><p class="bigtext">You have collected all ' + OM.playtime.ACORNS_A_DAY + ' acorns for today. The acorns will grow back tomorrow.</p><p>You can still earn feathers and stars.</p>', [['ok', 'Keep going', true]]);
+  }
+  // a friendly pop-up from the owl: buttons are [action, words, main?]; a click closes it and runs the action
+  function gentlePop(kind, words, buttons, onPick) {
+    if (doc.querySelector('.gentle')) return;
+    var box = doc.createElement('div'); box.className = 'ptover gentle ' + kind; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'gpTitle');
+    box.innerHTML = '<div class="card ptcard">' + (kind === 'acornTree' ? '<div class="treeart" aria-hidden="true">' + I('tree', { size: 64, stroke: 1.8 }) + '</div>' : owl('happy', 90)) + words +
+      '<div class="row ptbtns">' + buttons.map(function (b) { return '<button class="btn' + (b[2] ? ' big' : ' ghost') + '" data-gp="' + b[0] + '">' + b[1] + '</button>'; }).join('') + '</div></div>';
+    OM.stopSpeaking(); W.hideKeypad(); root.inert = true;
+    box.onclick = function (e) { var t = e.target.closest('[data-gp]'); if (!t) return; box.remove(); root.inert = false; if (onPick) onPick(t.getAttribute('data-gp')); };
+    doc.body.appendChild(box); box.querySelector('button').focus();
   }
   function firstPracticeToday() {
     var p = App.profile, today = new Date().toISOString().slice(0, 10);
@@ -340,6 +357,7 @@
     mount(header('New explorer') + '<main class="narrow"><form class="card form" id="f">' +
       '<label>Your first name<input name="name" required maxlength="20" autocomplete="off"></label>' +
       '<label>School year<select name="year">' + years.join('') + '</select></label>' +
+      '<p class="small-note">New explorers start with ' + OM.playtime.START.day + ' minutes of play a day. A grown-up can change this in the grown-ups’ area.</p>' +
       '<fieldset><legend>Choose your animal</legend>' + avatarPicker('otter', 'cat') + '</fieldset>' +
       '<fieldset><legend>Choose the baddie who traps ' + 'Pip' + ' in the wood</legend>' + baddiePicker('cat') + '</fieldset>' +
       '<label>Name your owl tutor<input name="owl" value="Pip" maxlength="16" autocomplete="off"></label>' +
@@ -456,7 +474,7 @@
       mi('team', 'user', 'Characters', 'Change your animal, ' + esc(owlName()) + '’s colour or the baddie') +
       (OM.cert.completed(p).length ? mi('certs', 'trophy', 'My certificates', 'Your award for finishing a year: save or print it') : '') +
       mi('help', 'book', 'Help book', 'How to do every topic') + '</nav>' +
-      '<p class="streak"><span>' + I('flame', { size: 18 }) + S.streakDays(p) + ' day streak</span><span>' + I('refresh', { size: 18 }) + p.fixIts + ' brave fixes</span></p></div></main>';
+      '<p class="streak"><span>' + I('leaf', { size: 18 }) + p.days.length + ' day' + (p.days.length === 1 ? '' : 's') + ' practised</span><span>' + I('refresh', { size: 18 }) + p.fixIts + ' brave fixes</span></p></div></main>';
     mount(html, {
       region: function (id) { App.go('region', { id: id }); },
       tables: function () { App.go('mtcIntro'); }, gate: function () { App.go('gate'); }, mix: function () { firstPracticeToday(); App.go('practice', { mix: true }); },
@@ -909,13 +927,19 @@
   // counted once a second: only while this child has a limit, the app is on screen, and someone has touched it in the last few minutes
   G.setInterval(function () {
     var p = App.profile, top = App.stack[App.stack.length - 1], now = Date.now(), secs = Math.min(5, (now - limitTick) / 1000); limitTick = now;
-    if (!p || !top || !PT.active(p)) return limitClose();
+    if (!p || !top) return limitClose();
     if (doc.visibilityState === 'visible' && now - lastTouch < PT.IDLE_MS) {
       if (NOT_COUNTED[top[0]]) PT.busy(p, now);
       else if (!limitBox) PT.add(p, secs, now);
       if (now - limitSaved > 15000) { limitSaved = now; S.save(); }
     }
     limitCheck();
+    // after a good spell in a row, Pip suggests a break (never during a test, and not when a limit has just stopped play)
+    if (!limitBox && !NOT_COUNTED[top[0]] && PT.nudgeDue(p, now)) {
+      PT.nudged(p, now); S.save();
+      gentlePop('breakNudge', '<h2 id="gpTitle">Time for a stretch?</h2><p class="bigtext">You have been practising for ' + PT.NUDGE_MINS + ' minutes in a row. Well done!</p><p>A short break helps your brain remember what you have learned.</p>',
+        [['break', 'Take a break', true], ['more', 'Keep going']], function (a) { if (a === 'break') { App.profile = null; App.stack = []; App.go('home', {}); } });
+    }
   }, 1000);
   doc.addEventListener('visibilitychange', function () { if (doc.visibilityState !== 'visible' && App.profile && App.profile.pt) S.save(); });
 
@@ -1029,7 +1053,7 @@
     var ownedN = range.filter(mine).length;
     mount(header('Dressing-up chest', { icon: 'nest' }) + '<main class="shopgrid"><div class="card center preview"><div id="bigav">' + avatar(170, null, 'cheer', tried ? wearPlus(tried) : null) + '</div>' +
       (tried ? '<p class="trying">Trying on: <b>' + tried.label + '</b></p>' : '') +
-      '<p class="purse">' + I('acorn', { size: 28 }) + p.acorns + ' acorns</p><p class="muted small-note">Earn acorns with daily practice, streaks, guard challenges and practice papers. Save up for the Legendary ones!</p>' +
+      '<p class="purse">' + I('acorn', { size: 28 }) + p.acorns + ' acorns</p><p class="muted small-note">Earn acorns by practising each day, getting answers right, beating guards and passing practice papers, up to ' + OM.playtime.ACORNS_A_DAY + ' a day. Save up for the Legendary ones!</p>' +
       '<p class="muted small-note">' + ownedN + ' of ' + range.length + ' items collected</p>' +
       '<button class="btn small ghost" data-act="undress">Take everything off</button></div>' +
       '<div><nav class="tabs shoptabs">' + OM.OUTFIT_SLOTS.map(function (s2) { var n = range.filter(function (it) { return it.slot === s2[0]; }).length; return '<button class="tab ' + (s2[0] === slot ? 'on' : '') + '" data-act="slot" data-arg="' + s2[0] + '">' + s2[1] + ' <small>' + n + '</small></button>'; }).join('') + '</nav>' +
@@ -1185,6 +1209,7 @@
         '<ul><li>Practice papers, including SATs-style and GCSE-style papers</li><li>Challenges against the guards</li><li>Topic quizzes</li><li>Times tables checks on the Tables Tree</li><li>Trick Box speed rounds</li><li>11+ timed tests</li></ul>' +
         '<p>Everything else counts, including lessons, practice, the map and the dressing-up chest. If a limit has been reached, the pop-up appears when ' + esc(tc.name) + ' finishes, and they cannot start another test until they can play again.</p></div>' +
         '<div class="card"><h3>How time is counted</h3><ul>' +
+        '<li>Whatever the limits, ' + esc(owlName()) + ' suggests a break after ' + PT.NUDGE_MINS + ' minutes in a row, and children can earn up to ' + PT.ACORNS_A_DAY + ' acorns a day, so playing for longer never earns more outfits.</li>' +
         '<li>Time counts only while the app is on screen. It pauses if nobody touches it for ' + PT.IDLE_MS / 60000 + ' minutes.</li>' +
         '<li>“In a row” starts again after the break you set. Time spent on a test does not count as a break.</li>' +
         '<li>“Each hour” and “every few hours” start when ' + esc(tc.name) + ' starts playing, and “each day” ends at midnight. The pop-up says when they can play again.</li>' +
@@ -1196,7 +1221,7 @@
       body = picker;
       if (c) {
         var regsC = CUR(c).regions, beaten = regsC.filter(function (r) { return guardBeaten(r, c); }).length, mtcBest = c.mtc.filter(function (t) { return (t.year || 4) === yearOf(c); }).reduce(function (m, t) { return Math.max(m, t.score); }, -1);
-        body += '<div class="statgrid"><div><b>' + c.feathers + '</b>feathers</div><div><b>' + c.days.length + '</b>days practised</div><div><b>' + S.streakDays(c) + '</b>day streak</div><div><b>' + beaten + '/' + regsC.length + '</b>guards beaten</div><div><b>' + (mtcBest < 0 ? '–' : mtcBest + '/25') + '</b>best tables check</div><div><b>' + c.fixIts + '</b>mistakes fixed</div></div>';
+        body += '<div class="statgrid"><div><b>' + c.feathers + '</b>feathers</div><div><b>' + c.days.length + '</b>days practised</div><div><b>' + OM.playtime.acornsLeft(c, Date.now()) + '</b>acorns left today</div><div><b>' + beaten + '/' + regsC.length + '</b>guards beaten</div><div><b>' + (mtcBest < 0 ? '–' : mtcBest + '/25') + '</b>best tables check</div><div><b>' + c.fixIts + '</b>mistakes fixed</div></div>';
         body += '<table class="data-table prog"><thead><tr><th>Objective</th><th>Stars</th><th>Correct</th><th>Answered</th><th>Level now</th><th>Last practised</th></tr></thead><tbody>' +
           regsC.map(function (r) {
             return '<tr class="rh"><td colspan="6" style="background:' + r.color + '">' + r.name + ' — ' + r.strand + '</td></tr>' + r.objectives.map(function (o) {

@@ -2,7 +2,7 @@
    tests/run-checks.js checks this, and `python tools/bump-version.py` changes both together. */
 (function (G) {
   'use strict';
-  var VERSION = 'v74';
+  var VERSION = 'v75';
   G.OM = G.OM || {};
   G.OM.VERSION = VERSION;
   G.OM.versionText = function () { return 'Version ' + VERSION.replace(/^v/, ''); };
