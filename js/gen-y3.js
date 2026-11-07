@@ -42,8 +42,9 @@
     make: function (r, L) {
       var n = r.int(101, 999), d = K.digits(n);
       if (L === 1) {
-        var pos = r.int(0, 2), val = d[pos] * [100, 10, 1][pos];
-        if (d[pos] === 0) { pos = 0; val = d[0] * 100; }
+        var pos = K.loneDigit(r, d);
+        while (pos < 0) { n = r.int(101, 999); d = K.digits(n); pos = K.loneDigit(r, d); }
+        var val = d[pos] * [100, 10, 1][pos];
         return K.int('What is the value of the digit <b>' + d[pos] + '</b> in <b>' + n + '</b>?', val, { hint: 'Is it in the hundreds, tens or ones column?', params: { n: n, pos: pos }, visual: V.placeValueOf(n),
           sol: [S('Put ' + n + ' in a place value chart.', V.placeValueOf(n)), 'The ' + d[pos] + ' is in the ' + ['hundreds', 'tens', 'ones'][pos] + ' column, so its value is ' + val + '.'] });
       }

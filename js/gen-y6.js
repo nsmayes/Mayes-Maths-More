@@ -15,7 +15,9 @@
   K.gen({ id: 'y6PlaceValue', objective: 'Y6-NPV-01', title: 'Numbers to 10,000,000',
     make: function (r, L) {
       var n = r.int(1000000, 9999999), ds = String(n).split('').map(Number);
-      if (L === 1) { var pos = r.int(0, 6); if (ds[pos] === 0) pos = 0; var val = ds[pos] * Math.pow(10, 6 - pos);
+      if (L === 1) { var pos = K.loneDigit(r, ds);
+        while (pos < 0) { n = r.int(1000000, 9999999); ds = K.digits(n); pos = K.loneDigit(r, ds); }
+        var val = ds[pos] * Math.pow(10, 6 - pos);
         return K.int('What is the value of the digit <b>' + ds[pos] + '</b> in <b>' + fmt(n) + '</b>?', val, { hint: 'Name the column: millions, hundred thousands, ten thousands…', params: { n: n, pos: pos }, sol: ['The ' + ds[pos] + ' is in the ' + PLACES[pos] + ' column, so it is worth ' + fmt(val) + '.'] }); }
       if (L === 2) { var w = K.toWords(n); return K.int('Write in digits: <b>' + w + '</b>', n, { hint: 'Millions first, then thousands, then the rest. Use zeros for empty columns.', params: { n: n, w: w }, sol: ['"' + w + '" = ' + fmt(n) + '.'] }); }
       var base = Math.floor(n / 100000) * 100000, nums = r.sample([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 4).map(function (k) { return base + k * 10000 + r.int(0, 9999); });
@@ -233,7 +235,9 @@
   K.gen({ id: 'y6DecPlace', objective: 'Y6-F-07', title: 'Decimal place value; × and ÷ by 10, 100, 1,000',
     make: function (r, L) {
       var th = r.int(1001, 99999); if (th % 10 === 0) th += 3;
-      if (L === 1) { th = r.int(1, 99) * 1000 + r.int(1, 9) * 100 + r.int(1, 9) * 10 + r.int(1, 9); var x = dstr(th), names = ['tenths', 'hundredths', 'thousandths'], k = r.int(0, 2), digit = +x.split('.')[1][k];
+      if (L === 1) { var names = ['tenths', 'hundredths', 'thousandths'], x, k;
+        do { th = r.int(1, 99) * 1000 + r.int(1, 9) * 100 + r.int(1, 9) * 10 + r.int(1, 9); x = dstr(th); var allD = K.digits(x.replace('.', '')), k0 = allD.length - 3, at = K.loneDigit(r, allD, [k0, k0 + 1, k0 + 2]); k = at - k0; } while (at < 0);
+        var digit = +x.split('.')[1][k];
         return K.dec('What is the value of the digit <b>' + digit + '</b> in the ' + names[k] + ' column of <b>' + x + '</b>? Write it as a decimal.', dstr(digit * Math.pow(10, 2 - k)), { hint: 'A digit in the ' + names[k] + ' column is worth that many ' + names[k] + '.', params: { th: th, k: k },
           sol: ['The ' + names[k] + ' digit is ' + digit + ', worth ' + dstr(digit * Math.pow(10, 2 - k)) + '.'] }); }
       var by = r.pick([10, 100, 1000]), mul = r.chance(0.5);

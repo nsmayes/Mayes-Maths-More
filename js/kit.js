@@ -96,6 +96,12 @@
 
   // ---------- small helpers ----------
   K.digits = function (n) { return String(n).split('').map(Number); };
+  // for "what is the value of the digit...?": a position (from those allowed) whose digit is not 0 and appears only once
+  // in all of ds, or -1 if there is none. If the digit appeared twice, the question and its explanation would be confusing.
+  K.loneDigit = function (r, ds, allowed) {
+    var ok = (allowed || ds.map(function (_, i) { return i; })).filter(function (i) { return ds[i] !== 0 && ds.indexOf(ds[i]) === ds.lastIndexOf(ds[i]); });
+    return ok.length ? r.pick(ok) : -1;
+  };
   K.sum = function (a) { return a.reduce(function (s, x) { return s + x; }, 0); };
   K.plural = function (n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); };
   K.fr = function (n, d, w) { return OM.frac(n, d, w); };

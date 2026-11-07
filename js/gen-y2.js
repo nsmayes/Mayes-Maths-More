@@ -26,6 +26,7 @@
       var n = r.int(21, 99); if (ones(n) === 0) n++;
       if (L === 1) return K.int('How many does this show?', n, { visual: V.base10(n), hint: 'Count the tens sticks in 10s, then count the ones.', params: { n: n, k: 'read' }, sol: ['There are ' + tens(n) + ' tens and ' + ones(n) + ' ones.', 'That makes ' + n + '.'] });
       var askT = r.chance(0.5);
+      if (L === 2 && tens(n) === ones(n)) n = n === 99 ? 98 : n + 1; // never 33: "the digit 3" would be either one
       if (L === 2) return K.int('What is the <b>value</b> of the digit <b>' + (askT ? tens(n) : ones(n)) + '</b> in ' + n + '?', askT ? tens(n) * 10 : ones(n), { hint: 'Is the digit in the tens or the ones?', params: { n: n, t: askT, k: 'val' }, sol: ['In ' + n + ' the ' + tens(n) + ' means ' + tens(n) * 10 + ' and the ' + ones(n) + ' means ' + ones(n) + '.'] });
       return K.multi('Fill in the gaps.', n + ' = {0} tens and {1} ones', [{ kind: 'int', value: tens(n) }, { kind: 'int', value: ones(n) }], { hint: 'Split ' + n + ' into tens and ones.', params: { n: n, k: 'split' }, answer: tens(n) + ' tens and ' + ones(n) + ' ones', sol: [n + ' = ' + tens(n) * 10 + ' + ' + ones(n) + '.'] });
     },

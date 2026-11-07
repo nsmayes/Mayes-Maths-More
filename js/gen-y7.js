@@ -25,7 +25,8 @@
   // ================= NUMBER: PLACE VALUE, ORDERING, ROUNDING (Cog Quarter) =================
   K.gen({ id: 'y7PlaceValue', objective: 'Y7-N-01', title: 'Place value with decimals and powers of 10',
     make: function (r, L) {
-      if (L === 1) { var whole = r.int(1, 99), ds = [r.int(1, 9), r.int(1, 9), r.int(1, 9)], x = whole + '.' + ds.join(''), k = r.int(0, 2), names = ['tenths', 'hundredths', 'thousandths'];
+      if (L === 1) { var names = ['tenths', 'hundredths', 'thousandths'], whole, ds, x, k;
+        do { whole = r.int(1, 99); ds = [r.int(1, 9), r.int(1, 9), r.int(1, 9)]; x = whole + '.' + ds.join(''); var allD = K.digits(x.replace('.', '')), k0 = allD.length - 3, at = K.loneDigit(r, allD, [k0, k0 + 1, k0 + 2]); k = at - k0; } while (at < 0);
         var val = '0.' + '0'.repeat(k) + ds[k];
         return K.dec('What is the value of the digit <b>' + ds[k] + '</b> in the ' + names[k] + ' column of <b>' + x + '</b>?', val, { hint: 'The first column after the point is tenths, then hundredths, then thousandths.', params: { x: x, k: k }, sol: ['The ' + names[k] + ' digit is ' + ds[k] + ', worth ' + val + '.'] }); }
       var by = L === 2 ? r.pick(['10', '100', '1000']) : r.pick(['0.1', '0.01']), mul = r.chance(0.5);

@@ -13,7 +13,9 @@
   K.gen({ id: 'y5PlaceValue', objective: 'Y5-NPV-01', title: 'Numbers to 1,000,000',
     make: function (r, L) {
       var n = r.int(100000, 999999), ds = String(n).split('').map(Number);
-      if (L === 1) { var pos = r.int(0, 5); if (ds[pos] === 0) pos = 0; var val = ds[pos] * PVAL[pos];
+      if (L === 1) { var pos = K.loneDigit(r, ds);
+        while (pos < 0) { n = r.int(100000, 999999); ds = K.digits(n); pos = K.loneDigit(r, ds); }
+        var val = ds[pos] * PVAL[pos];
         return K.int('What is the value of the digit <b>' + ds[pos] + '</b> in <b>' + fmt(n) + '</b>?', val, { hint: 'Find its column: ' + PLACES.join(', ') + '.', params: { n: n, pos: pos },
           sol: ['The ' + ds[pos] + ' is in the ' + PLACES[pos] + ' column.', 'Its value is ' + fmt(val) + '.'] }); }
       if (L === 2) { var w = K.toWords(n); return K.int('Write this number in digits: <b>' + w + '</b>', n, { hint: 'Write the thousands part, then the hundreds, tens and ones. Use 0 for empty columns.', params: { n: n, w: w },
