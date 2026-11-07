@@ -43,7 +43,7 @@
     return '<div class="picker">' + OM.AVATARS.map(function (a) {
       var ok = OM.avatarAllowed(a.id, bad);
       return '<label class="pick' + (ok ? '' : ' off') + '"><input type="radio" name="avatar" value="' + a.id + '"' + (a.id === sel ? ' checked' : '') + (ok ? '' : ' disabled') + '>' +
-        OM.animalSVG(a.id, { size: 62, real: real || 0 }) + '<span>' + a.name + '</span></label>';
+        OM.animalSVG(a.id, { size: 62, real: real || 0 }) + '<span>' + esc(a.name) + '</span></label>';
     }).join('') + '</div><p class="small-note pick-note"></p>';
   }
   function baddiePicker(sel, real) {
@@ -570,7 +570,7 @@
   Screens.lesson = function (pr) {
     var o = OM.objectiveIndex[pr.id], ex = OM.generate(o.gens[0], 1, pr.seed);
     var slides = o.intro.map(function (s) { return { text: s.say, vis: s.vis ? s.vis(V) : '' }; });
-    slides.push({ text: 'Now watch me solve one, step by step.', vis: '<div class="qprompt">' + ex.prompt + '</div>' + (ex.visual || ''), mood: 'think' });
+    slides.push({ text: 'Now watch me solve one, step by step.', vis: '<div class="qprompt">' + ex.prompt + '</div>' + (ex.shown || ex.visual || ''), mood: 'think' });
     ex.solution.forEach(function (st, k) { slides.push({ text: '<b>Step ' + (k + 1) + ':</b> ' + st.text, vis: st.html, mood: 'think', head: ex.prompt }); });
     slides.push({ text: 'Your turn! Remember: ' + o.method[0], vis: '', mood: 'cheer', end: true });
     var i = Math.min(pr.i || 0, slides.length - 1), s = slides[i];
@@ -702,6 +702,7 @@
             fb.innerHTML = '<div class="fb bad"><div class="fbtop"><p class="fbh">The answer is ' + q.answerText + '.</p>' + '<button class="btn big nextbtn" data-act="next">Next' + I('next', { size: 22, stroke: 2.5 }) + '</button>' + '</div>' + partial + (res.notes.length ? '<ul>' + res.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('') + '</ul>' : '') + '</div>' + solutionHTML() + schemeBox(res);
             showNext();
             say('Let’s look at it together. Next time it will be easier!', 'think');
+            var wrongLine = doc.querySelector('.qcard .nltap'); if (wrongLine) OM.nlPlay(wrongLine);
           }
         }
       },
@@ -710,7 +711,10 @@
         if (!revealed && attempt === 1) S.record(p, objId, q.level, false);
         revealed = true;
         var fb = doc.getElementById('fb');
-        if (!fb.querySelector('.solution')) fb.insertAdjacentHTML('beforeend', solutionHTML() + '<p class="muted">Now try answering it yourself.</p>');
+        var addSolution = function () { if (doc.getElementById('fb') === fb && !fb.querySelector('.solution')) fb.insertAdjacentHTML('beforeend', solutionHTML() + '<p class="muted">Now try answering it yourself.</p>'); };
+        // on a number line, count it out first, then give the written answer
+        var jumpLine = doc.querySelector('.qcard .nltap');
+        if (jumpLine) { jumpLine.scrollIntoView({ block: 'nearest' }); OM.nlPlay(jumpLine, addSolution); } else addSolution();
       },
       next: function () { next(); },
       report: function () { S.report({ date: Date.now(), profile: p.name, gen: q.gen, level: q.level, seed: q.seed, objective: q.objective, prompt: OM.speakable(q.prompt), response: JSON.stringify(ctl.get()) }); toast('Thanks! A grown-up can check this question in the grown-ups’ area.'); },
@@ -801,7 +805,7 @@
         '<h3>How each question was marked</h3>' + qs.map(function (q, k) {
           var res = results[k];
           return '<details class="review card ' + (res.correct ? 'ok' : res.score ? 'part' : 'no') + '"><summary><span class="mark">' + I(res.correct ? 'check' : res.score ? 'half' : 'x', { size: 18, stroke: 3 }) + '</span><span class="qn">Q' + (k + 1) + '</span> <b>' + res.score + '/' + res.max + '</b> <span class="muted">' + OM.objectiveIndex[q.objective].title + '</span></summary>' +
-            '<div class="qprompt small">' + q.prompt + '</div>' + (q.visual ? '<div class="vis-wrap">' + q.visual + '</div>' : '') +
+            '<div class="qprompt small">' + q.prompt + '</div>' + (q.visual ? '<div class="vis-wrap">' + (q.shown || q.visual) + '</div>' : '') +
             '<p><b>Your answer:</b> ' + W.describe(q, resps[k]) + '</p><p><b>Correct answer:</b> ' + q.answerText + '</p>' +
             (res.notes.length ? '<ul class="notes">' + res.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('') + '</ul>' : '') +
             '<div class="scheme open"><b>' + I('clipboard', { size: 20 }) + 'Mark scheme</b><ul>' + OM.schemeLines(q).map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul></div>' +
@@ -1105,7 +1109,7 @@
       '<div class="card"><h3>How to do it</h3><ol class="method">' + o.method.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ol>' + speakBtn(o.method.join('. ')) + '</div>' +
       '<div class="card warn"><h3>' + I('warn', { size: 24 }) + 'Watch out for these mistakes</h3><ul>' + o.mistakes.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul></div>' +
       '<div class="card"><h3>Key words</h3><div class="chips">' + o.vocab.map(function (v) { return '<span class="chip">' + v + '</span>'; }).join('') + '</div></div>' +
-      '<div class="card"><h3>Worked example</h3><div class="qprompt small">' + ex.prompt + '</div>' + (ex.visual ? '<div class="vis-wrap">' + ex.visual + '</div>' : '') +
+      '<div class="card"><h3>Worked example</h3><div class="qprompt small">' + ex.prompt + '</div>' + (ex.visual ? '<div class="vis-wrap">' + (ex.shown || ex.visual) + '</div>' : '') +
       ex.solution.slice(0, step + 1).map(function (s, k) { return '<div class="step"><span class="stepn">' + (k + 1) + '</span><div><p>' + s.text + '</p>' + (s.html ? '<div class="vis-wrap">' + s.html + '</div>' : '') + '</div></div>'; }).join('') +
       (step + 1 < ex.solution.length ? '<button class="btn" data-act="step">Next step' + I('next', { size: 22, stroke: 2.5 }) + '</button>' : '<p><b>Answer: ' + ex.answerText + '</b></p>') +
       ' <button class="btn ghost" data-act="newex">Another example</button></div>' +

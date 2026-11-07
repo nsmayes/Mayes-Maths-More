@@ -3,7 +3,7 @@
    - The app's own files are saved when it is installed (FILES), in a store named after this version. On each visit the
      newest copy is fetched if the device is online, so updates arrive by themselves; offline, the saved copy is used.
    When any file changes, change VERSION so devices pick up the new copy. tests/run-checks.js checks FILES is complete. */
-var VERSION = 'v61';
+var VERSION = 'v74';
 var CACHE = 'mmm-app-' + VERSION;
 var FILES = ['./', 'index.html', 'play.html', 'about.html', 'help.html', 'css/fonts.css', 'css/app.css', 'css/site.css', 'manifest.webmanifest', 'icon.svg', 'img/brand/mark.svg', 'img/brand/mark-small.svg',
   'img/icons/icon-192.png', 'img/icons/icon-512.png', 'img/icons/maskable-512.png', 'img/icons/apple-touch-icon-180.png', 'img/icons/favicon-32.png',

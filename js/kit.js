@@ -11,6 +11,7 @@
     o = o || {};
     var q = { prompt: prompt, input: input, check: check, hint: o.hint, solution: (o.sol || []).map(function (s) { return typeof s === 'string' ? K.S(s) : s; }), params: o.params || {} };
     if (o.visual) q.visual = o.visual;
+    if (o.shown) q.shown = o.shown; // the same picture with the working drawn on, for worked examples and reviews
     if (o.answer) q.answerText = o.answer;
     if (o.marks) q.marks = o.marks;
     if (o.reject) q.reject = o.reject;

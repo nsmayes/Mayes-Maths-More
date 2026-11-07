@@ -107,11 +107,94 @@
     return '<path d="' + d + '" stroke="' + colour + '" stroke-width=".7" fill="none" stroke-linecap="round" opacity="' + opacity + '"/>';
   }
 
-  // ---------- the nine animals ----------
+  // ---------- shared heads: the cows, and the big cats ----------
+  function natCow(L, c, marks) {
+    var head = [[34, 28], [60, 23], [86, 28], [96, 42], [92, 60], [84, 76], [82, 90], [72, 99], [60, 101], [48, 99], [38, 90], [36, 76], [28, 60], [24, 42]], s = '';
+    [[38, 30, 32, 14, 1], [82, 30, 88, 14, -1]].forEach(function (h) { s += '<path d="M' + (h[0] - 5 * h[4]) + ' ' + h[1] + ' Q' + h[2] + ' ' + (h[3] + 8) + ' ' + h[2] + ' ' + h[3] + ' Q' + (h[2] + 7 * h[4]) + ' ' + (h[3] + 6) + ' ' + (h[0] + 5 * h[4]) + ' ' + (h[1] - 2) + ' Z" fill="#d9ccae"/>'; });
+    [[[28, 42], [14, 38], [4, 46], [14, 54], [28, 50]], [[92, 42], [106, 38], [116, 46], [106, 54], [92, 50]]].forEach(function (e, i) {
+      s += '<path d="' + furry(e, L.fringe * .5, L.r) + '" fill="' + c.ear + '"/>';
+      var inner = e.map(function (q) { var m = centre(e); return [m[0] + (q[0] - m[0]) * .6, m[1] + (q[1] - m[1]) * .55 + 1]; });
+      s += shape(inner, c.pink, ' opacity=".75"');
+    });
+    s += '<path d="' + furry(head, L.fringe, L.r) + '" fill="' + c.headFill(L) + '"/>';
+    s += fur(head, L.furN, [60, 40], 4, c.shade, .8, .35, L.r) + fur(head, L.furN * .4, [60, 40], 3.4, c.light, .7, .45, L.r);
+    s += marks ? marks(L, c, head) : '';
+    var muz = [[37, 82], [48, 77], [60, 76], [72, 77], [83, 82], [84, 92], [74, 100], [60, 102], [46, 100], [36, 92]];
+    s += shape(muz, c.muzzle) + '<ellipse cx="60" cy="81" rx="15" ry="3" fill="#fff" opacity=".22"/>';
+    s += '<ellipse cx="49" cy="85" rx="4" ry="3" fill="#5a3a3e" transform="rotate(-18 49 85)"/><ellipse cx="71" cy="85" rx="4" ry="3" fill="#5a3a3e" transform="rotate(18 71 85)"/>';
+    s += '<path d="M60 89 V93 M50 95 Q60 ' + (L.happy ? 100 : 98) + ' 70 95" stroke="#5a3a3e" stroke-width="1.4" fill="none" stroke-linecap="round"/>';
+    return s;
+  }
+  // a long horse's face, front on; marks are painted on the coat, before the muzzle and the forelock
+  function natHorse(L, c, marks, top) {
+    var head = [[38, 24], [60, 19], [82, 24], [93, 38], [90, 56], [83, 72], [79, 88], [72, 98], [60, 101], [48, 98], [41, 88], [37, 72], [30, 56], [27, 38]], s = c.behind ? c.behind(L, c) : '';
+    [[[37, 30], [29, 16], [32, 1], [43, 12], [49, 26]], [[83, 30], [91, 16], [88, 1], [77, 12], [71, 26]]].forEach(function (e) {
+      s += '<path d="' + furry(e, L.fringe * .25, L.r) + '" fill="' + c.ear + '"/>';
+      var m = centre(e), inner = e.map(function (q) { return [m[0] + (q[0] - m[0]) * .52, m[1] + (q[1] - m[1]) * .62 + 1]; });
+      s += shape(inner, c.pink, ' opacity=".8"');
+    });
+    s += '<path d="' + furry(head, L.fringe * .35, L.r) + '" fill="' + c.headFill(L) + '"/>';
+    s += fur(head, L.furN * .6, [60, 40], 3, c.shade, .7, .3, L.r) + fur(head, L.furN * .3, [60, 40], 2.8, c.light, .6, .4, L.r);
+    // the bony line down the nose, and the hollow above each eye
+    s += '<path d="M50 44 Q52 62 50 74 M70 44 Q68 62 70 74" stroke="' + c.shade + '" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="' + f(.08 + .2 * L.real) + '"/>';
+    s += marks ? marks(L, c) : '';
+    var muz = [[41, 80], [50, 74], [60, 73], [70, 74], [79, 80], [81, 91], [73, 100], [60, 102], [47, 100], [39, 91]];
+    s += shape(muz, c.muzzle) + '<ellipse cx="60" cy="79" rx="13" ry="3" fill="#fff" opacity=".16"/>';
+    s += '<path d="M46 80 Q51 78 53 84 Q51 89 47 87 Q49 83 46 80 Z M74 80 Q69 78 67 84 Q69 89 73 87 Q71 83 74 80 Z" fill="' + c.nostril + '"/>';
+    s += '<path d="M47 94 Q60 ' + (L.happy ? 101 : 98) + ' 73 94" stroke="' + c.nostril + '" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+    return s + (top ? top(L, c) : '');
+  }
+  // long hairs falling from a line, for manes and forelocks
+  function strands(from, to, n, len, sway, colour, width, opacity, r) {
+    var d = '';
+    for (var i = 0; i < n; i++) { var t = n < 2 ? .5 : i / (n - 1), x = from[0] + (to[0] - from[0]) * t, y = from[1] + (to[1] - from[1]) * t, l = len * (.8 + .35 * r()), w = sway * (.6 + .8 * r()); d += 'M' + f(x) + ' ' + f(y) + ' q' + f(w) + ' ' + f(l * .5) + ' ' + f(w * .3) + ' ' + f(l); }
+    return '<path d="' + d + '" stroke="' + colour + '" stroke-width="' + width + '" fill="none" stroke-linecap="round" opacity="' + opacity + '"/>';
+  }
+  // a sheep: wool round a smooth face, in whatever colours the sheep has
+  function natSheep(L, c) {
+    var wool = '', out = [[60, 16], [38, 20], [22, 34], [14, 52], [20, 70], [32, 78], [88, 78], [100, 70], [106, 52], [98, 34], [82, 20]], s = '';
+    s += '<ellipse cx="14" cy="66" rx="12" ry="6" fill="' + c.fur + '" transform="rotate(16 14 66)"/><ellipse cx="106" cy="66" rx="12" ry="6" fill="' + c.fur + '" transform="rotate(-16 106 66)"/>';
+    s += '<path d="' + furry(out, 2 + L.fringe, L.r) + '" fill="' + c.wool + '"/>';
+    var n = Math.round(26 + 90 * L.real), poly = dense(out, 4);
+    for (var i = 0, tries = 0; i < n && tries < n * 20; tries++) { var x = 14 + 92 * L.r(), y = 16 + 62 * L.r(); if (!inside(poly, x, y)) continue; wool += '<path d="M' + f(x - 3.4) + ' ' + f(y + 1) + ' q3.4 -4.6 6.8 0" stroke="' + c.woolD + '" stroke-width="1.2" fill="none" stroke-linecap="round"/>'; i++; }
+    s += wool;
+    var face = [[42, 44], [60, 38], [78, 44], [86, 60], [80, 76], [72, 90], [60, 98], [48, 90], [40, 76], [34, 60]];
+    s += '<path d="' + furry(face, L.fringe * .25, L.r) + '" fill="url(#' + L.id + 'h)"/>' + fur(face, L.furN * .5, [60, 94], 2.6, c.shade, .6, .4, L.r);
+    s += '<path d="' + furry([[42, 46], [52, 38], [68, 38], [78, 46], [68, 48], [52, 48]], 2 + L.fringe * .6, L.r) + '" fill="' + c.wool + '"/>';
+    s += '<path d="M54 85 Q60 82 66 85 Q63 90 60 90.5 Q57 90 54 85 Z" fill="' + c.nose + '"/><path d="M54 91.5 Q60 ' + (L.happy ? 97 : 95) + ' 66 91.5" stroke="' + c.mouth + '" stroke-width="1.2" fill="none" stroke-linecap="round"/>';
+    return s;
+  }
+  function natBigCat(L, c, marks) {
+    var ear = [[24, 46], [18, 32], [24, 20], [36, 20], [46, 32]], head = [[36, 30], [60, 26], [84, 30], [98, 44], [103, 60], [97, 76], [84, 88], [70, 96], [60, 98], [50, 96], [36, 88], [23, 76], [17, 60], [22, 44]], s = '';
+    [ear, mirror(ear)].forEach(function (e) {
+      s += '<path d="' + furry(e, L.fringe * .5, L.r) + '" fill="' + (c.earBack || c.fur) + '"/>';
+      var inner = e.map(function (q) { var m = centre(e); return [m[0] + (q[0] - m[0]) * .58, m[1] + (q[1] - m[1]) * .58 + 3]; });
+      s += shape(inner, c.earIn, ' opacity=".85"');
+    });
+    s += '<path d="' + furry(head, L.fringe, L.r) + '" fill="url(#' + L.id + 'h)"/>' + fur(head, L.furN, [60, 78], 4, c.shade, .8, .4, L.r) + fur(head, L.furN * .5, [60, 78], 3.4, c.light, .7, .5, L.r);
+    s += marks ? marks(L, c) : '';
+    var pads = [[40, 74], [52, 70], [60, 73], [68, 70], [80, 74], [76, 88], [60, 97], [44, 88]];
+    s += '<path d="' + furry(pads, L.fringe * .5, L.r) + '" fill="' + c.white + '"/>' + shape([[54, 56], [60, 54], [66, 56], [65, 72], [55, 72]], c.light, ' opacity=".5"');
+    s += '<path d="M54 71 Q60 69 66 71 L60 78 Z" fill="' + c.nose + '"/><path d="M60 78 V82 M60 82 Q55 86 51 84 M60 82 Q65 86 69 84" stroke="' + c.line + '" stroke-width="1.3" fill="none" stroke-linecap="round"/>';
+    s += '<g fill="' + c.line + '" opacity=".55"><circle cx="47" cy="79" r=".8"/><circle cx="44" cy="82" r=".8"/><circle cx="49" cy="83" r=".8"/><circle cx="73" cy="79" r=".8"/><circle cx="76" cy="82" r=".8"/><circle cx="71" cy="83" r=".8"/></g>';
+    s += whiskers([[48, 81, -1], [72, 81, 1]], 30, c.whisker, .55 + .3 * L.real, L.real > .6 ? 5 : 3, L.r);
+    return s;
+  }
+  // a leopard's rosette: a broken ring of dark blotches, the same on both sides of the face
+  function natRosettes(L, c) {
+    var d = '', spots = [[30, 44, 5], [43, 33, 4.5], [24, 60, 4.5], [30, 74, 4.5], [42, 86, 3.6]];
+    spots.concat(spots.map(function (q) { return [120 - q[0], q[1], q[2]]; })).forEach(function (q) {
+      for (var i = 0; i < 4; i++) { var a = i / 4 * 6.283 + L.r() * .5, x = q[0] + Math.cos(a) * q[2], y = q[1] + Math.sin(a) * q[2]; d += '<ellipse cx="' + f(x) + '" cy="' + f(y) + '" rx="2.1" ry="1.5" transform="rotate(' + f(a * 57.3 + 90) + ' ' + f(x) + ' ' + f(y) + ')" fill="' + c.spot + '"/>'; }
+    });
+    [[60, 34], [54, 40], [66, 40], [60, 46], [52, 49], [68, 49]].forEach(function (q) { d += '<ellipse cx="' + q[0] + '" cy="' + q[1] + '" rx="1.9" ry="1.5" fill="' + c.spot + '"/>'; });
+    return d;
+  }
+
+  // ---------- the animals ----------
   // each: colours, eye settings, where hats and glasses go (top, eyes [y, dx], eyeR), and draw(L) returning the head.
   // L: { real, r (random), id, happy, fringe, furN (how many fur strokes), defs (push gradient definitions) }
   var NAT = {
-    fox: { top: 22, hatY: 24, hatS: 0.95, eyes: [55, 17], eyeR: 6, col: { fur: '#d4652a', light: '#f09a55', shade: '#94400f', white: '#f6efe4', black: '#24170f' }, throat: '#f6efe4',
+    fox: { neckY: 4, top: 22, hatY: 24, hatS: 0.95, eyes: [55, 17], eyeR: 6, col: { fur: '#d4652a', light: '#f09a55', shade: '#94400f', white: '#f6efe4', black: '#24170f' }, throat: '#f6efe4',
       eye: { r: 5.4, iris: '#e3a03a', pupil: 'slit', tilt: -12 },
       draw: function (L, c) {
         var earL = [[20, 50], [14, 26], [16, 4], [34, 14], [52, 30]], head = [[40, 26], [60, 21], [80, 26], [96, 36], [104, 50], [111, 64], [96, 70], [84, 81], [70, 93], [60, 99], [50, 93], [36, 81], [24, 70], [9, 64], [16, 50], [24, 36]];
@@ -170,7 +253,7 @@
         if (L.real > .4) s += whiskers([[52, 80, -1], [68, 80, 1]], 20, '#f4ece0', .35 + .35 * L.real, 3, L.r);
         return s;
       } },
-    hedgehog: { top: 30, hatY: 9, hatS: 1.05, eyes: [60, 15], eyeR: 5, col: { fur: '#c9a47c', light: '#e3c9a6', shade: '#8f6c4a', spine: '#5d4936', tip: '#e6d8c0' }, throat: '#d9bf9c',
+    hedgehog: { neckY: 5, top: 30, hatY: 9, hatS: 1.05, eyes: [60, 15], eyeR: 5, col: { fur: '#c9a47c', light: '#e3c9a6', shade: '#8f6c4a', spine: '#5d4936', tip: '#e6d8c0' }, throat: '#d9bf9c',
       eye: { r: 3.8, iris: '#1a120d', pupil: 'bead' },
       draw: function (L, c) {
         var dome = [[8, 74], [10, 46], [28, 18], [60, 4], [92, 18], [110, 46], [112, 74], [96, 64], [60, 52], [24, 64]], s = '';
@@ -191,7 +274,7 @@
         s += '<path d="M56 99 Q60 ' + (L.happy ? 102 : 101) + ' 64 99" stroke="#16100c" stroke-width="1.1" fill="none" opacity=".6"/>';
         return s;
       } },
-    badger: { top: 24, hatY: 26, hatS: 1.0, eyes: [54, 16], eyeR: 5.5, col: { fur: '#8f9196', light: '#b3b5b9', shade: '#5c5e62', white: '#f2f0ea', black: '#1c1c1e' }, throat: '#2a2a2d',
+    badger: { darkEyes: true, top: 24, hatY: 26, hatS: 1.0, eyes: [54, 16], eyeR: 5.5, col: { fur: '#8f9196', light: '#b3b5b9', shade: '#5c5e62', white: '#f2f0ea', black: '#1c1c1e' }, throat: '#2a2a2d',
       eye: { r: 4, iris: '#4a2c1c', pupil: 'bead' },
       draw: function (L, c) {
         var head = [[32, 30], [60, 24], [88, 30], [98, 48], [96, 66], [84, 82], [70, 94], [60, 98], [50, 94], [36, 82], [24, 66], [22, 48]], s = '';
@@ -267,7 +350,143 @@
         s += '<path d="M55 74 L65 74 L60 79.5 Z" fill="' + c.pink + '"/><path d="M60 79.5 V83 M60 83 Q56 86.5 52.5 84.5 M60 83 Q64 86.5 67.5 84.5" stroke="#5a3424" stroke-width="1.2" fill="none" stroke-linecap="round"/>';
         s += whiskers([[50, 82, -1], [70, 82, 1]], 30, '#ffffff', .55 + .3 * L.real, L.real > .6 ? 5 : 3, L.r);
         return s;
-      } }
+      } },
+    sheep: { top: 18, hatY: 20, hatS: .92, eyes: [62, 15], eyeR: 5.5, col: { fur: '#ead8c6', light: '#f8ecdf', shade: '#ab917c', wool: '#f4efe3', woolD: '#c4b9a4', nose: '#8a5b55', mouth: '#8a5b55' }, throat: '#f4efe3',
+      eye: { r: 5, iris: '#3a2416', pupil: 'bead', ring: '#a58b77' },
+      draw: natSheep },
+    blacksheep: { top: 18, hatY: 20, hatS: .92, dark: true, eyes: [62, 15], eyeR: 5.5, col: { fur: '#2b2729', light: '#4d4649', shade: '#141213', wool: '#39353a', woolD: '#5f595f', nose: '#0e0c0d', mouth: '#d3c8bb' }, throat: '#39353a',
+      eye: { r: 5, iris: '#8a6a3a', pupil: 'bead', ring: '#6d6569' },
+      draw: natSheep },
+    cow: { top: 20, hatY: 22, hatS: .86, neckY: 5, eyes: [52, 22], eyeR: 6, col: { fur: '#8a5230', light: '#b37a4e', shade: '#552f17', ear: '#7a4627', pink: '#d39a94', muzzle: '#d9b3a4', headFill: function (L) { return 'url(#' + L.id + 'h)'; } }, throat: '#6e4122',
+      eye: { r: 5.2, iris: '#1f130c', pupil: 'bead' },
+      draw: function (L, c) { return natCow(L, c, function () { return '<path d="M60 26 L54 46 Q60 54 66 46 Z" fill="#f2e6d4" opacity=".92"/>'; }); } },
+    cowbw: { darkEyes: true, top: 20, hatY: 22, hatS: .86, neckY: 5, eyes: [52, 22], eyeR: 6, lid: 'black', col: { fur: '#1f2023', light: '#ece8de', shade: '#a7a297', white: '#f4f1e9', black: '#1f2023', ear: '#1f2023', pink: '#d39a94', muzzle: '#e0b8b6', headFill: function (L) { return 'url(#' + L.id + 'w)'; } }, throat: '#f4f1e9',
+      eye: { r: 5.2, iris: '#4a2c18', pupil: 'bead', ring: '#5b4a40' },
+      draw: function (L, c) {
+        return natCow(L, c, function (L2, c2) {
+          var left = [[34, 28], [50, 24], [54, 40], [51, 60], [40, 68], [30, 60], [26, 44]], right = mirror(left);
+          return '<path d="' + furry(left, L2.fringe * .4, L2.r) + '" fill="' + c2.black + '"/><path d="' + furry(right, L2.fringe * .4, L2.r) + '" fill="' + c2.black + '"/>' + fur(left, L2.furN * .25, [60, 40], 3.6, '#46474c', .7, .6, L2.r) + fur(right, L2.furN * .25, [60, 40], 3.6, '#46474c', .7, .6, L2.r);
+        });
+      } },
+    horse: { top: 18, hatY: 20, hatS: .8, neckY: 5, eyes: [50, 23], eyeR: 5.5,
+      col: { fur: '#94572c', light: '#c08650', shade: '#54301a', ear: '#7f4a26', pink: '#c9928a', mane: '#2c1c13', muzzle: '#7d5a48', nostril: '#2a1a14', headFill: function (L) { return 'url(#' + L.id + 'h)'; },
+        behind: function (L, c) { var m = [[83, 26], [98, 42], [101, 66], [97, 88], [87, 101], [88, 76], [84, 52]]; return shape(m, c.mane) + (L.real < .3 ? '' : strands([84, 30], [96, 50], Math.round(L.furN * .08), 42, 3, '#5a4030', .7, .55, L.r)); } },
+      throat: '#7f4a26',
+      eye: { r: 5, iris: '#2a160c', pupil: 'bead' },
+      draw: function (L, c) {
+        return natHorse(L, c, function () {
+          return '<path d="M60 36 Q55 54 54 74 L66 74 Q65 54 60 36 Z" fill="#f4ecdf"/>' + (L.real < .3 ? '' : strands([57, 42], [63, 42], Math.round(L.furN * .05), 26, .8, '#c9bda9', .6, .45, L.r));
+        }, function () {
+          var lock = [[43, 21], [52, 15], [60, 13], [68, 15], [77, 21], [74, 33], [65, 44], [62, 36], [56, 40], [52, 43], [46, 32]];
+          return shape(lock, c.mane) + (L.real < .3 ? '' : strands([46, 20], [74, 20], Math.round(L.furN * .1), 18, 2.2, '#60442f', .7, .6, L.r));
+        });
+      } },
+    zebra: { darkEyes: true, top: 18, hatY: 20, hatS: .8, neckY: 5, eyes: [50, 23], eyeR: 5.5, lid: 'white',
+      col: { fur: '#1f2023', light: '#ece8de', shade: '#a7a297', white: '#f4f1e9', black: '#1f2023', ear: '#cfcbc0', pink: '#2c2d31', muzzle: '#232428', nostril: '#55565c', headFill: function (L) { return 'url(#' + L.id + 'w)'; } },
+      throat: '#f4f1e9',
+      eye: { r: 5, iris: '#2a160c', pupil: 'bead', ring: '#3a3a3e' },
+      draw: function (L, c) {
+        // tapering stripes: [edge x, y, edge x, y, tip x, y] for the left of the face; the right is its mirror
+        var list = [[35, 25, 31, 30, 51, 35], [29, 33, 27, 38, 45, 38], [33, 60, 35, 66, 55, 60], [37, 70, 39, 77, 52, 70]], d = '';
+        list.forEach(function (q) {
+          [0, 1].forEach(function (m) { function X(x) { return m ? 120 - x : x; } var j = L.real < .3 ? 0 : (L.r() - .5) * 1.6;
+            d += 'M' + X(q[0]) + ' ' + q[1] + ' Q' + f(X((q[0] + q[4]) / 2)) + ' ' + f((q[1] + q[5]) / 2 - 1 + j) + ' ' + X(q[4]) + ' ' + q[5] + ' Q' + f(X((q[2] + q[4]) / 2)) + ' ' + f((q[3] + q[5]) / 2 + 1 + j) + ' ' + X(q[2]) + ' ' + q[3] + ' Z '; });
+        });
+        d += 'M50 33 L60 45 L70 33 L70 38 L60 51 L50 38 Z M53 54 L60 60 L67 54 L67 59 L60 66 L53 59 Z';
+        return natHorse(L, c, function () { return '<path d="' + d + '" fill="' + c.black + '"/>'; }, function () {
+          var s = '<path d="M47 27 Q46 17 51 13 Q60 9 69 13 Q74 17 73 27 Q60 21 47 27 Z" fill="' + c.black + '"/><path d="M54 12 L56 11 L56 24 L54 24 Z M64 11 L66 12 L66 24 L64 24 Z" fill="' + c.white + '"/>';
+          return s + (L.real < .3 ? '' : strands([50, 14], [70, 14], Math.round(L.furN * .08), 7, .8, '#4a4b50', .6, .55, L.r));
+        });
+      } },
+    capybara: { top: 28, hatY: 26, hatS: .84, eyes: [46, 25], eyeR: 5, col: { fur: '#8f6841', light: '#b38d62', shade: '#5c4026', snout: '#a98459' }, throat: '#a98459',
+      eye: { r: 3.8, iris: '#20130b', pupil: 'bead' },
+      draw: function (L, c) {
+        var head = [[34, 30], [60, 27], [86, 30], [94, 44], [96, 66], [95, 86], [84, 97], [60, 100], [36, 97], [25, 86], [24, 66], [26, 44]], s = '';
+        [[32, 30], [88, 30]].forEach(function (e) { s += '<circle cx="' + e[0] + '" cy="' + e[1] + '" r="5.5" fill="' + c.shade + '"/><circle cx="' + e[0] + '" cy="' + (e[1] + .8) + '" r="2.4" fill="#2e1f12"/>'; });
+        s += '<path d="' + furry(head, L.fringe, L.r) + '" fill="url(#' + L.id + 'h)"/>' + fur(head, L.furN * 1.1, [60, 40], 5, c.shade, .9, .45, L.r) + fur(head, L.furN * .5, [60, 40], 4, c.light, .8, .45, L.r);
+        var sn = [[34, 70], [48, 62], [72, 62], [86, 70], [90, 88], [80, 98], [60, 100], [40, 98], [30, 88]];
+        s += shape(sn, c.snout, ' opacity=".5"');
+        s += '<ellipse cx="50" cy="72" rx="3.6" ry="2" fill="#22150c" transform="rotate(-20 50 72)"/><ellipse cx="70" cy="72" rx="3.6" ry="2" fill="#22150c" transform="rotate(20 70 72)"/>';
+        s += '<path d="M60 83 V87 M47 88 Q60 ' + (L.happy ? 95 : 92) + ' 73 88" stroke="#22150c" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".75"/>';
+        return s;
+      } },
+    axolotl: { top: 34, hatY: 36, hatS: .8, eyes: [58, 29], eyeR: 5, col: { fur: '#eea4b4', light: '#f9ccd5', shade: '#c9708a', belly: '#fbdfe4', gill: '#c8415f', gillL: '#ea7492' }, throat: '#fbdfe4',
+      eye: { r: 3.6, iris: '#1a1012', pupil: 'bead', ring: '#c9708a' },
+      draw: function (L, c) {
+        var s = '';
+        [[-1, 24], [1, 96]].forEach(function (side) {
+          [[-20, -22], [-28, -4], [-22, 16]].forEach(function (g) {
+            var sx = side[1], sy = 56 + g[1] * .15, ex = sx + side[0] * -g[0], ey = 56 + g[1], d = '';
+            for (var i = 1; i < 7; i++) { var t = i / 7, x = sx + (ex - sx) * t, y = sy + (ey - sy) * t; d += 'M' + f(x) + ' ' + f(y) + ' l' + f(side[0] * 4) + ' -6 M' + f(x) + ' ' + f(y) + ' l' + f(side[0] * 4) + ' 6'; }
+            s += '<path d="M' + sx + ' ' + f(sy) + ' L' + f(ex) + ' ' + f(ey) + '" stroke="' + c.gill + '" stroke-width="3.6" stroke-linecap="round"/><path d="' + d + '" stroke="' + c.gillL + '" stroke-width="1.6" stroke-linecap="round" fill="none"/>';
+          });
+        });
+        var head = [[34, 40], [60, 34], [86, 40], [100, 54], [103, 70], [92, 86], [74, 94], [60, 96], [46, 94], [28, 86], [17, 70], [20, 54]];
+        s += shape(head, 'url(#' + L.id + 'h)');
+        // smooth wet skin: a few freckles, a pale underside, the long smile and a shine
+        var sp = '', n = Math.round(6 + 20 * L.real), poly = dense(head, 3);
+        for (var i2 = 0; i2 < n; i2++) { var x2 = 24 + 72 * L.r(), y2 = 40 + 34 * L.r(); if (inside(poly, x2, y2)) sp += '<circle cx="' + f(x2) + '" cy="' + f(y2) + '" r="' + f(.6 + .7 * L.r()) + '" fill="' + c.shade + '" opacity=".55"/>'; }
+        s += sp + '<path d="M28 80 Q60 96 92 80 Q84 94 60 96 Q36 94 28 80 Z" fill="' + c.belly + '" opacity=".85"/>';
+        s += '<path d="M24 74 Q60 ' + (L.happy ? 94 : 90) + ' 96 74" stroke="#a84a68" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="55" cy="66" r="1.1" fill="#a84a68"/><circle cx="65" cy="66" r="1.1" fill="#a84a68"/>';
+        s += '<path d="M40 46 Q60 40 80 46" stroke="#fff" stroke-width="2.6" fill="none" opacity="' + f(.25 + .3 * L.real) + '" stroke-linecap="round"/>';
+        return s;
+      } },
+    koala: { top: 26, hatY: 28, hatS: .8, eyes: [56, 18], eyeR: 5.5, col: { fur: '#8c9299', light: '#b6bbc0', shade: '#585e65', white: '#eeece6' }, throat: '#eeece6',
+      eye: { r: 4, iris: '#3a2416', pupil: 'bead' },
+      draw: function (L, c) {
+        var head = [[36, 30], [60, 25], [84, 30], [96, 46], [97, 64], [88, 82], [72, 93], [60, 96], [48, 93], [32, 82], [23, 64], [24, 46]], s = '<g class="ears">';
+        [[[24, 18], [8, 30], [2, 46], [10, 60], [28, 60], [38, 40], [36, 24]], [[96, 18], [112, 30], [118, 46], [110, 60], [92, 60], [82, 40], [84, 24]]].forEach(function (e, i) {
+          s += '<path d="' + furry(e, 1.6 + L.fringe, L.r) + '" fill="url(#' + L.id + 'h)"/>';
+          var inner = e.map(function (q) { var m = centre(e); return [m[0] + (q[0] - m[0]) * .68, m[1] + (q[1] - m[1]) * .68 + 2]; });
+          s += '<path d="' + furry(inner, 1.6 + L.fringe, L.r) + '" fill="' + c.white + '"/>' + fur(inner, 8 + L.furN * .15, [i ? 90 : 30, 42], 6, '#c8c6be', .9, .8, L.r, .8);
+        });
+        s += '</g><path d="' + furry(head, L.fringe, L.r) + '" fill="url(#' + L.id + 'h)"/>' + fur(head, L.furN, [60, 66], 3.6, c.shade, .8, .4, L.r) + fur(head, L.furN * .5, [60, 66], 3, c.light, .7, .5, L.r);
+        s += shape([[44, 84], [60, 80], [76, 84], [70, 94], [60, 96], [50, 94]], c.white, ' opacity=".85"');
+        // the big, spoon-shaped nose
+        s += '<path d="M51 58 Q60 54 69 58 Q72 72 68 82 Q60 88 52 82 Q48 72 51 58 Z" fill="#23252b"/><path d="M55 60 Q53 68 55 76" stroke="#fff" stroke-width="2" fill="none" opacity=".28" stroke-linecap="round"/><path d="M54 82 Q60 78 66 82" stroke="#000" stroke-width="1.4" fill="none" opacity=".6"/>';
+        s += '<path d="M52 89 Q60 ' + (L.happy ? 94 : 92) + ' 68 89" stroke="#23252b" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".7"/>';
+        return s;
+      } },
+    sloth: { top: 22, hatY: 24, hatS: .9, eyes: [58, 20], eyeR: 6, lid: 'mask', col: { fur: '#8f7a5e', light: '#b7a386', shade: '#5c4c38', cream: '#e8dcc2', mask: '#3e2e20' }, throat: '#b7a386',
+      eye: { r: 3.8, iris: '#160d08', pupil: 'bead' },
+      draw: function (L, c) {
+        var head = [[36, 28], [60, 22], [84, 28], [98, 46], [100, 66], [90, 84], [74, 95], [60, 98], [46, 95], [30, 84], [20, 66], [22, 46]], s = '';
+        s += '<path d="' + furry(head, 1 + L.fringe * 1.3, L.r) + '" fill="url(#' + L.id + 'h)"/>' + fur(head, L.furN * 1.2, [60, 60], 6, c.shade, 1, .45, L.r, .9) + fur(head, L.furN * .6, [60, 60], 5, c.light, .9, .5, L.r, .9);
+        var face = [[42, 42], [60, 38], [78, 42], [90, 58], [86, 76], [74, 90], [60, 94], [46, 90], [34, 76], [30, 58]];
+        s += '<path d="' + furry(face, L.fringe * .6, L.r) + '" fill="' + c.cream + '"/>' + fur(face, L.furN * .35, [60, 76], 3, '#b9a98a', .7, .6, L.r);
+        // the dark stripe running back from each eye
+        var mask = [[50, 52], [40, 50], [28, 56], [22, 66], [26, 72], [38, 68], [48, 64], [52, 58]];
+        s += '<path d="' + furry(mask, L.fringe * .3, L.r) + '" fill="' + c.mask + '"/><path d="' + furry(mirror(mask), L.fringe * .3, L.r) + '" fill="' + c.mask + '"/>';
+        s += '<ellipse cx="60" cy="72" rx="6" ry="4.6" fill="#2a1d13"/><ellipse cx="58.4" cy="70.6" rx="1.8" ry=".9" fill="#fff" opacity=".45"/>';
+        s += '<path d="M60 77 V80 M46 79 Q60 ' + (L.happy ? 90 : 88) + ' 74 79" stroke="#2a1d13" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".8"/>';
+        return s;
+      } },
+    lion: { top: 12, hatY: 14, hatS: .92, eyes: [60, 15], eyeR: 5.5, col: { fur: '#d29a4e', light: '#ecc484', shade: '#8f5f25', white: '#f6ebd6', mane: '#9a5a22', maneL: '#c4823a', maneD: '#5e3312', nose: '#7a4638', line: '#3a241a', whisker: '#fff8e8' }, throat: '#9a5a22',
+      eye: { r: 4.8, iris: '#c98a24', pupil: 'round', tilt: -8 },
+      draw: function (L, c) {
+        var pts = []; for (var i = 0; i < 16; i++) { var a = i / 16 * 6.283 - 1.57, R = 46 + (i % 2 ? 3 : -2); pts.push([60 + Math.cos(a) * R * 1.02, 60 + Math.sin(a) * R]); }
+        var s = '<path d="' + furry(pts, 3 + L.fringe * 1.5, L.r) + '" fill="' + c.mane + '"/>' + fur(pts, 50 + L.furN * 1.4, [60, 60], 9, c.maneD, 1.3, .55, L.r, .4) + fur(pts, 30 + L.furN * .9, [60, 60], 8, c.maneL, 1.1, .6, L.r, .4);
+        [[36, 30], [84, 30]].forEach(function (e) { s += '<circle cx="' + e[0] + '" cy="' + e[1] + '" r="7.5" fill="' + c.fur + '"/><circle cx="' + e[0] + '" cy="' + (e[1] + 1) + '" r="3.8" fill="#6b3f1b"/>'; });
+        var head = [[40, 36], [60, 30], [80, 36], [90, 50], [90, 68], [82, 84], [70, 95], [60, 98], [50, 95], [38, 84], [30, 68], [30, 50]];
+        s += '<path d="' + furry(head, L.fringe * .7, L.r) + '" fill="url(#' + L.id + 'h)"/>' + fur(head, L.furN * .7, [60, 78], 3.6, c.shade, .8, .4, L.r) + fur(head, L.furN * .4, [60, 78], 3, c.light, .7, .5, L.r);
+        var pads = [[42, 74], [52, 70], [60, 73], [68, 70], [78, 74], [74, 88], [60, 97], [46, 88]];
+        s += '<path d="' + furry(pads, L.fringe * .4, L.r) + '" fill="' + c.white + '"/>' + shape([[53, 50], [60, 48], [67, 50], [66, 72], [54, 72]], c.light, ' opacity=".55"');
+        s += '<path d="M53 71 Q60 69 67 71 L60 79 Z" fill="' + c.nose + '"/><path d="M60 79 V83 M60 83 Q55 87 51 85 M60 83 Q65 87 69 85" stroke="' + c.line + '" stroke-width="1.3" fill="none" stroke-linecap="round"/>';
+        s += whiskers([[49, 81, -1], [71, 81, 1]], 24, c.whisker, .55 + .3 * L.real, L.real > .6 ? 5 : 3, L.r);
+        return s;
+      } },
+    snowleopard: { top: 26, hatY: 28, hatS: .95, eyes: [58, 18], eyeR: 6, col: { fur: '#c9cdcb', light: '#eceeec', shade: '#868c8e', white: '#f6f6f2', spot: '#3d4346', earIn: '#55595b', nose: '#a97880', line: '#3a3234', whisker: '#ffffff' }, throat: '#f6f6f2',
+      eye: { r: 5.2, iris: '#9fbcc4', pupil: 'round', tilt: -8 },
+      draw: function (L, c) { return natBigCat(L, c, natRosettes); } },
+    panther: { top: 26, hatY: 28, hatS: .95, dark: true, eyes: [58, 18], eyeR: 6, col: { fur: '#22222a', light: '#4b4b58', shade: '#0b0b0e', white: '#2e2e37', spot: '#111116', earIn: '#0e0e12', nose: '#0a0a0c', line: '#73737f', whisker: '#e6e6ee', earBack: '#1a1a20' }, throat: '#2e2e37',
+      eye: { r: 5.2, iris: '#d9bf2e', pupil: 'round', tilt: -8 },
+      draw: function (L, c) { return natBigCat(L, c, natRosettes); } },
+    leopard: { top: 26, hatY: 28, hatS: .95, eyes: [58, 18], eyeR: 6, col: { fur: '#d9a24e', light: '#f1cc8a', shade: '#92642a', white: '#f8efdd', spot: '#2c1c0e', earIn: '#2c1c0e', nose: '#b9707a', line: '#3a241a', whisker: '#ffffff' }, throat: '#f8efdd',
+      eye: { r: 5.2, iris: '#b3b03a', pupil: 'round', tilt: -8 },
+      draw: function (L, c) { return natBigCat(L, c, natRosettes); } },
+    puma: { top: 26, hatY: 28, hatS: .95, eyes: [58, 18], eyeR: 6, col: { fur: '#b98f5e', light: '#d9b98e', shade: '#7c5a34', white: '#f5ecdd', earIn: '#2e2118', nose: '#a8656e', line: '#2e2118', whisker: '#ffffff' }, throat: '#f5ecdd',
+      eye: { r: 5.2, iris: '#c79a3a', pupil: 'round', tilt: -8 },
+      draw: function (L, c) { return natBigCat(L, c, function () { return '<path d="M44 73 Q37 74 35 83 M76 73 Q83 74 85 83" stroke="#2e2118" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".85"/>'; }); } }
 ,
     // the two baddies that are never a player's animal
     wolf: { top: 22, hatY: 24, hatS: 0.95, eyes: [55, 17], eyeR: 6, col: { fur: '#868d95', light: '#c0c5ca', shade: '#4b5158', white: '#e9ebed', black: '#24272b' }, throat: '#e9ebed',
@@ -339,7 +558,7 @@
       '<linearGradient id="' + id + 's" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eef1f4"/><stop offset=".5" stop-color="#9ea9b4"/><stop offset="1" stop-color="#56606a"/></linearGradient>' + (c.white ? '<radialGradient id="' + id + 'w" cx=".45" cy=".35" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="' + c.white + '"/><stop offset="1" stop-color="' + mix(c.white, '#7a756c', .35 + .15 * real) + '"/></radialGradient>' : '') + '<linearGradient id="' + id + 'j" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + o.jacket[0] + '"/><stop offset="1" stop-color="' + o.jacket[1] + '"/></linearGradient>';
     var head = A.draw(L, c);
     // eyes (smaller and more natural as the years go up), with a raised lower lid when happy
-    var er = A.eye.r * (1.25 - 0.25 * real), lid = kind === 'badger' ? c.black : 'url(#' + id + 'h)', eyes = '<g class="blink">' +
+    var er = A.eye.r * (1.25 - 0.25 * real), lid = kind === 'badger' ? c.black : A.lid ? c[A.lid] : 'url(#' + id + 'h)', eyes = '<g class="blink">' +
       eye({ x: 60 - A.eyes[1], y: A.eyes[0], r: er, iris: iris, pupil: A.eye.pupil, tilt: -(A.eye.tilt || 0), ring: A.eye.ring, lid: lid, sly: bad, side: 1, brow: A.eye.brow, irisId: id + 'i' }, happy, id + 'l') +
       eye({ x: 60 + A.eyes[1], y: A.eyes[0], r: er, iris: iris, pupil: A.eye.pupil, tilt: A.eye.tilt || 0, ring: A.eye.ring, lid: lid, sly: bad, side: -1, brow: A.eye.brow, irisId: id + 'i' }, happy, id + 'r') + '</g>';
     if (bad) return baddie(kind, role, o, A, c, L, id, defs, head, eyes, size, real);
@@ -360,7 +579,7 @@
     if (OM.drawOutfit) {
       // things worn on the back are scaled up to these wider shoulders; anything held gets a sleeved arm and a paw round
       // its handle (the younger animals have their own little arms)
-      var sp = { top: A.hatY || A.top, hatS: A.hatS, eyes: A.eyes, eyeR: A.eyeR }, wear = Object.assign({}, o.wear || {}), held = wear.held; delete wear.held;
+      var sp = { top: A.hatY || A.top, hatS: A.hatS, eyes: A.eyes, eyeR: A.eyeR, neckY: A.neckY, dark: A.dark, darkEyes: A.darkEyes, darkNeck: true }, wear = Object.assign({}, o.wear || {}), held = wear.held; delete wear.held;
       var dr = OM.drawOutfit(wear, sp); outfit = dr.front; back = dr.back ? '<g transform="translate(60 112) scale(1.32) translate(-60 -112)">' + dr.back + '</g>' : '';
       if (held) {
         var hd = OM.drawOutfit({ held: held }, sp);

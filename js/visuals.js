@@ -60,6 +60,100 @@
     return svg(W, H, b);
   };
 
+  // ---------- A number line the child jumps along ----------
+  // Nothing on it gives the answer away. The child taps a number to start, then taps more numbers to draw their own jumps.
+  // o: min, max, labelEvery, format, from, to (what "Show me how" counts through), kind: 'count' | 'between', dir words come from from/to.
+  function arcHTML(x1, x2, y, label, cls) {
+    var mx = (x1 + x2) / 2, top = y - 22 - Math.min(26, Math.abs(x2 - x1) / 4), s = x2 > x1 ? 1 : -1;
+    return '<g class="nl-hop"><path class="' + (cls || '') + '" pathLength="1" d="M' + x1 + ' ' + (y - 6) + ' Q' + mx + ' ' + top + ' ' + x2 + ' ' + (y - 6) + '" fill="none" stroke="' + C.amber + '" stroke-width="3" stroke-linecap="round"/>' +
+      '<polygon points="' + x2 + ',' + (y - 5) + ' ' + (x2 - s * 8) + ',' + (y - 12) + ' ' + (x2 - s * 1) + ',' + (y - 15) + '" fill="' + C.amber + '"/>' +
+      (label ? t(mx, top - 5, label, { size: 13, fill: '#8a5a12', weight: 'bold' }) : '') + '</g>';
+  }
+  V.tapLine = function (o) {
+    var n = o.max - o.min, gap = n <= 10 ? 40 : n <= 20 ? 21 : 18, pad = 30, W = pad * 2 + n * gap, H = 118, y = 76, b = '', hits = '', every = o.labelEvery || 1;
+    b += line(pad - 12, y, W - pad + 12, y, { w: 3 });
+    for (var v = o.min; v <= o.max; v++) {
+      var x = pad + (v - o.min) * gap, big = v % every === 0, shown = o.format ? o.format(v) : OM.fmt(v);
+      b += line(x, y - (big ? 10 : 6), x, y + (big ? 10 : 6), { w: big ? 2.5 : 1.5 });
+      if (big) b += t(x, y + 25, shown, { size: gap < 30 && every === 1 ? 14 : 16, weight: 'bold' });
+      hits += '<rect class="nl-hit" data-v="' + v + '" data-shown="' + shown + '" x="' + (x - gap / 2) + '" y="18" width="' + gap + '" height="' + (H - 18) + '" tabindex="0" role="button" aria-label="' + shown + '"/>';
+    }
+    return '<div class="nltap" data-min="' + o.min + '" data-x0="' + pad + '" data-gap="' + gap + '" data-y="' + y + '" data-from="' + o.from + '" data-to="' + o.to + '" data-kind="' + (o.kind || 'count') + '">' +
+      // long lines keep finger-sized numbers on a phone and scroll sideways instead of shrinking
+      '<div class="nl-scroll" style="--nlw:' + (n > 10 ? n * 28 + 56 : 0) + 'px">' + svg(W, H, b + '<g class="nl-hops"></g><g class="nl-marks"></g>' + hits) + '</div>' +
+      '<div class="nl-foot"><p class="nl-status">Tap the number you start on, then tap to make your jumps.</p>' +
+      '<span class="nl-tools"><button type="button" class="link nl-undo" hidden>Undo</button><button type="button" class="link nl-clear" hidden>Start again</button></span></div></div>';
+  };
+  function nlParts(root) {
+    var d = root.dataset, min = +d.min, x0 = +d.x0, gap = +d.gap, y = +d.y;
+    return { hops: root.querySelector('.nl-hops'), marks: root.querySelector('.nl-marks'), status: root.querySelector('.nl-status'), y: y, X: function (v) { return x0 + (v - min) * gap; }, gap: gap,
+      shown: function (v) { var h = root.querySelector('.nl-hit[data-v="' + v + '"]'); return h ? h.getAttribute('data-shown') : String(v); } };
+  }
+  function nlDot(P, v, col) { P.marks.innerHTML = '<circle class="nl-dot" cx="' + P.X(v) + '" cy="' + P.y + '" r="7.5" fill="' + (col || C.berry) + '" stroke="#fff" stroke-width="2"/>'; }
+  // keeps a number in view while the line is counted out
+  function nlCentre(root, P, v) {
+    var box = root.querySelector('.nl-scroll'), pic = box && box.querySelector('svg'); if (!pic || box.scrollWidth <= box.clientWidth + 1) return;
+    box.scrollLeft = P.X(v) * pic.clientWidth / pic.viewBox.baseVal.width - box.clientWidth / 2;
+  }
+  function nlTools(root, on) { root.querySelector('.nl-undo').hidden = !on; root.querySelector('.nl-clear').hidden = !on; }
+  // the child's own jumps
+  function nlRefresh(root) {
+    var P = nlParts(root), path = root.nlPath || [], h = '';
+    for (var i = 1; i < path.length; i++) { var size = Math.abs(path[i] - path[i - 1]); h += arcHTML(P.X(path[i - 1]), P.X(path[i]), P.y, size > 1 ? (path[i] > path[i - 1] ? '+' : '−') + size : ''); }
+    P.hops.innerHTML = h;
+    if (!path.length) { P.marks.innerHTML = ''; P.status.textContent = 'Tap the number you start on, then tap to make your jumps.'; nlTools(root, false); return; }
+    nlDot(P, path[path.length - 1]);
+    var jumps = path.length - 1, here = P.shown(path[path.length - 1]);
+    P.status.textContent = jumps ? 'You are on ' + here + ' after ' + jumps + ' jump' + (jumps === 1 ? '' : 's') + '.' : 'You are starting on ' + here + '. Tap the next number to jump.';
+    nlTools(root, true);
+  }
+  // "Show me how": clears the line and counts along it one jump at a time, as the child should
+  OM.nlPlay = function (root, done) {
+    var P = nlParts(root), from = +root.dataset.from, to = +root.dataset.to, between = root.dataset.kind === 'between', steps = Math.abs(to - from), dir = to > from ? 1 : -1, wait = steps <= 10 ? 800 : Math.max(280, 8000 / steps), token = {}, seen = [];
+    root.nlPlaying = token; root.nlPath = [from]; root.classList.add('nl-busy'); nlTools(root, false); P.hops.innerHTML = ''; nlDot(P, from); nlCentre(root, P, from);
+    var word = dir > 0 ? 'Count up' : 'Count back', begin = between ? 'Start on ' + P.shown(from) + '. Count up to ' + P.shown(to) + '.' : 'Start on ' + P.shown(from) + '. ' + word + ' ' + steps + '.';
+    P.status.textContent = begin; if (steps <= 12) OM.say && OM.say(begin);
+    var i = 0, labels = P.gap >= 18;
+    function step() {
+      if (root.nlPlaying !== token || !root.isConnected) return;
+      if (i >= steps) return finish();
+      i++;
+      var a = from + (i - 1) * dir, z = from + i * dir;
+      P.hops.insertAdjacentHTML('beforeend', arcHTML(P.X(a), P.X(z), P.y, labels || i % 5 === 0 || i === steps ? String(i) : '', 'nl-draw'));
+      setTimeout(function () { if (root.nlPlaying === token && root.isConnected) { nlDot(P, z); nlCentre(root, P, z); } }, Math.min(300, wait * .7));
+      root.nlPath.push(z); seen.push(P.shown(z));
+      P.status.textContent = (between ? 'Counting up: ' : word + ': ') + seen.slice(-6).join(', ');
+      if (steps <= 12 && OM.say) OM.say(String(i));
+      setTimeout(step, wait);
+    }
+    function finish() {
+      root.classList.remove('nl-busy'); nlTools(root, true);
+      P.status.textContent = between ? 'From ' + P.shown(from) + ' to ' + P.shown(to) + ' is ' + steps + ' jumps.' : steps ? word + ' ' + steps + ' from ' + P.shown(from) + ' and you land on ' + P.shown(to) + '.' : 'No jumps needed: you stay on ' + P.shown(from) + '.';
+      root.nlPlaying = null; if (done) done();
+    }
+    setTimeout(step, steps <= 12 ? 1500 : 800);
+  };
+  if (typeof document !== 'undefined') {
+    var nlTap = function (hit) {
+      var root = hit.closest('.nltap'); if (!root || root.classList.contains('nl-busy')) return;
+      var v = +hit.getAttribute('data-v'), path = root.nlPath || (root.nlPath = []);
+      if (path[path.length - 1] === v) return;
+      path.push(v); nlRefresh(root); if (OM.sfx && OM.sfx.tap) OM.sfx.tap();
+    };
+    document.addEventListener('click', function (e) {
+      var el = e.target; if (!el || !el.closest) return;
+      var hit = el.closest('.nl-hit'); if (hit) return nlTap(hit);
+      var undo = el.closest('.nl-undo'), clear = el.closest('.nl-clear'), root = (undo || clear) && (undo || clear).closest('.nltap');
+      if (!root || root.classList.contains('nl-busy')) return;
+      e.preventDefault();
+      if (undo) (root.nlPath || []).pop(); else root.nlPath = [];
+      nlRefresh(root);
+    });
+    document.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('nl-hit')) { e.preventDefault(); nlTap(e.target); }
+    });
+  }
+
   // ---------- Place value chart ----------
   // cols: ['Th','H','T','O'] (or with decimals 'O','t','h'); digits: array of strings ('' = empty)
   V.placeValue = function (cols, digits, o) {

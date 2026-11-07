@@ -100,8 +100,10 @@
       else if (L === 2) { a = r.int(10, 18); b = r.int(0, add ? 20 - a : a - 10); }
       else { a = r.int(3, 9); b = r.int(10 - a + 1, 9); if (!add) { a = r.int(11, 18); b = r.int(a - 9, 9); } }
       var ans = add ? a + b : a - b;
-      return K.int('<b>' + a + (add ? ' + ' : ' − ') + b + ' = ?</b>', ans, { hint: add ? 'Start at ' + a + ' and count on ' + b + '.' : 'Start at ' + a + ' and count back ' + b + '.', params: { a: a, b: b, add: add },
-        visual: V.numberLine({ min: 0, max: 20, step: 1, labelEvery: 1, hops: b ? [{ from: a, to: ans, label: (add ? '+' : '−') + b }] : [] }), sol: [a + (add ? ' + ' : ' − ') + b + ' = ' + ans + '.'] });
+      return K.int('<b>' + a + (add ? ' + ' : ' − ') + b + ' = ?</b>', ans, { hint: !b ? (add ? 'Adding 0 leaves the number the same.' : 'Taking away 0 leaves the number the same.') : (add ? 'Count up ' : 'Count back ') + b + ' from ' + a + '.', params: { a: a, b: b, add: add },
+        // the line stays clean: the child draws the jumps, and "Show me how" counts them out
+        visual: V.tapLine({ min: L === 2 ? 10 : 0, max: L === 1 ? 10 : 20, from: a, to: ans }),
+        shown: V.numberLine({ min: 0, max: 20, step: 1, labelEvery: 1, hops: b ? [{ from: a, to: ans, label: (add ? '+' : '−') + b }] : [] }), sol: [a + (add ? ' + ' : ' − ') + b + ' = ' + ans + '.'] });
     },
     verify: function (q) { var p = q.params, x = p.a; for (var i = 0; i < p.b; i++) x += p.add ? 1 : -1; return x === q.check.value && x >= 0 && x <= 20; } });
 

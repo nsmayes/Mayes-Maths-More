@@ -39,7 +39,8 @@
     make: function (r, L) {
       var a = -r.int(2, L === 3 ? 40 : 15), b = r.int(1, L === 3 ? 30 : 12);
       if (L === 1) return K.int('What is the difference between <b>' + neg(a) + '</b> and <b>' + b + '</b>?', b - a, { hint: 'Count from ' + neg(a) + ' up to 0, then on to ' + b + '.', params: { a: a, b: b, k: 'diff' },
-        visual: V.numberLine({ min: Math.min(a, -2) - 1, max: b + 1, step: 1, labelEvery: a < -10 ? 5 : 2, format: neg, hops: [{ from: a, to: 0, label: String(-a) }, { from: 0, to: b, label: String(b) }] }), sol: [neg(a) + ' to 0 is ' + (-a) + '. 0 to ' + b + ' is ' + b + '.', (-a) + ' + ' + b + ' = ' + (b - a) + '.'] });
+        visual: V.tapLine({ min: Math.min(a, -2) - 1, max: b + 1, labelEvery: a < -10 ? 5 : 2, format: neg, from: a, to: b, kind: 'between' }),
+        shown: V.numberLine({ min: Math.min(a, -2) - 1, max: b + 1, step: 1, labelEvery: a < -10 ? 5 : 2, format: neg, hops: [{ from: a, to: 0, label: String(-a) }, { from: 0, to: b, label: String(b) }] }), sol: [neg(a) + ' to 0 is ' + (-a) + '. 0 to ' + b + ' is ' + b + '.', (-a) + ' + ' + b + ' = ' + (b - a) + '.'] });
       if (L === 2) { var t = r.int(-8, 6), fall = r.int(t + 3, t + 18); return K.int('At noon it was ' + neg(t) + '°C. By midnight the temperature had fallen by ' + (fall - t) + ' degrees. What was the temperature at midnight?', t - (fall - t), { keys: 'signed', suffix: '°C', hint: 'Count back from ' + neg(t) + '.', params: { a: t, b: fall - t, k: 'fall' },
         sol: [neg(t) + ' − ' + (fall - t) + ' = ' + neg(t - (fall - t)) + '°C.'] }); }
       return K.int('A submarine is at ' + neg(a * 10) + ' m (below sea level). A helicopter is ' + b * 10 + ' m above sea level. How far apart are they vertically?', b * 10 - a * 10, { suffix: 'm', hint: 'Add the distance below sea level to the distance above it.', params: { a: a * 10, b: b * 10, k: 'diff' }, sol: [(-a * 10) + ' + ' + b * 10 + ' = ' + (b * 10 - a * 10) + ' m.'] });

@@ -54,7 +54,8 @@
       var a = r.int(-12, 8), b = r.int(-12, 15); while (a === b || (a >= 0 && b >= 0)) { a = r.int(-12, 8); b = r.int(-12, 15); }
       if (L === 2) { var hi = Math.max(a, b), lo = Math.min(a, b);
         return K.int('At night the temperature was ' + neg(lo) + '°C. At midday it was ' + neg(hi) + '°C. By how many degrees did it rise?', hi - lo, { suffix: '°C', hint: 'Count up from ' + neg(lo) + ' to 0, then on to ' + neg(hi) + '.', params: { a: lo, b: hi },
-          visual: V.numberLine({ min: Math.min(-12, lo), max: Math.max(10, hi), step: 1, labelEvery: 2, format: neg, hops: [{ from: lo, to: hi, label: '+' + (hi - lo) }] }), sol: [lo < 0 && hi > 0 ? 'From ' + neg(lo) + ' to 0 is ' + (-lo) + '. From 0 to ' + hi + ' is ' + hi + '.' : 'Count the steps from ' + neg(lo) + ' to ' + neg(hi) + '.', 'It rose by ' + (hi - lo) + ' degrees.'] }); }
+          visual: V.tapLine({ min: Math.min(-12, lo), max: Math.max(10, hi), labelEvery: 2, format: neg, from: lo, to: hi, kind: 'between' }),
+          shown: V.numberLine({ min: Math.min(-12, lo), max: Math.max(10, hi), step: 1, labelEvery: 2, format: neg, hops: [{ from: lo, to: hi, label: '+' + (hi - lo) }] }), sol: [lo < 0 && hi > 0 ? 'From ' + neg(lo) + ' to 0 is ' + (-lo) + '. From 0 to ' + hi + ' is ' + hi + '.' : 'Count the steps from ' + neg(lo) + ' to ' + neg(hi) + '.', 'It rose by ' + (hi - lo) + ' degrees.'] }); }
       var t0 = r.int(-5, 9), ch = -r.int(6, 15);
       return K.int('The temperature is ' + neg(t0) + '°C. It falls by ' + (-ch) + ' degrees. What is the new temperature?', t0 + ch, { keys: 'signed', suffix: '°C', hint: 'Count back ' + (-ch) + ' from ' + neg(t0) + '.', params: { t0: t0, ch: ch },
         sol: ['Count back ' + (-ch) + ' degrees from ' + neg(t0) + '.', 'The new temperature is ' + neg(t0 + ch) + '°C.'] });

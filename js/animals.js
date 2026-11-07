@@ -9,6 +9,45 @@
     return '<path d="M16 ' + y + ' L40 ' + (y + 4) + ' M18 ' + (y + 10) + ' L40 ' + (y + 8) + ' M104 ' + y + ' L80 ' + (y + 4) + ' M102 ' + (y + 10) + ' L80 ' + (y + 8) + '" stroke="' + INK + '" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>';
   }
   function smile(x, y, w) { return '<path d="M' + x + ' ' + y + ' Q' + (x - w / 2) + ' ' + (y + 6) + ' ' + (x - w) + ' ' + (y + 2) + ' M' + x + ' ' + y + ' Q' + (x + w / 2) + ' ' + (y + 6) + ' ' + (x + w) + ' ' + (y + 2) + '" stroke="' + INK + '" stroke-width="2" fill="none" stroke-linecap="round"/>'; }
+  // shared shapes for the farm animals and the big cats
+  function softSmile(y, w, col) { return '<path d="M60 ' + y + ' Q' + (60 - w / 2) + ' ' + (y + 6) + ' ' + (60 - w) + ' ' + (y + 2) + ' M60 ' + y + ' Q' + (60 + w / 2) + ' ' + (y + 6) + ' ' + (60 + w) + ' ' + (y + 2) + '" stroke="' + col + '" stroke-width="2" fill="none" stroke-linecap="round"/>'; }
+  function cowHead(c, o) {
+    var inner = o.ear || '#f3b6c0';
+    return '<path d="M38 28 Q30 20 32 12 Q40 16 46 26 Z M82 28 Q90 20 88 12 Q80 16 74 26 Z" fill="#e8dcc0"/>' +
+      '<ellipse cx="17" cy="46" rx="15" ry="8.5" fill="' + o.earFur + '" transform="rotate(14 17 46)"/><ellipse cx="103" cy="46" rx="15" ry="8.5" fill="' + o.earFur + '" transform="rotate(-14 103 46)"/>' +
+      '<ellipse cx="17" cy="47" rx="9" ry="4.5" fill="' + inner + '" transform="rotate(14 17 47)"/><ellipse cx="103" cy="47" rx="9" ry="4.5" fill="' + inner + '" transform="rotate(-14 103 47)"/>' +
+      '<path d="M32 28 Q60 18 88 28 Q98 44 90 66 Q88 78 86 84 L34 84 Q32 78 30 66 Q22 44 32 28 Z" fill="' + c[0] + '"/>' + (o.marks || '') +
+      '<ellipse cx="60" cy="84" rx="28" ry="16" fill="#f0bfc4"/><ellipse cx="50" cy="82" rx="3.2" ry="4" fill="#a8606e"/><ellipse cx="70" cy="82" rx="3.2" ry="4" fill="#a8606e"/>' + softSmile(91, 12, '#8c4f5c');
+  }
+  // a long horse's face, front on: tall pointed ears, a forelock and a wide soft muzzle
+  function horseHead(c, o) {
+    return (o.behind || '') +
+      '<path d="M37 30 Q27 16 31 2 Q43 10 49 26 Z M83 30 Q93 16 89 2 Q77 10 71 26 Z" fill="' + (o.earFur || c[0]) + '"/><path d="M38 25 Q33 16 34 9 Q41 14 45 24 Z M82 25 Q87 16 86 9 Q79 14 75 24 Z" fill="' + (o.ear || '#e8a9a4') + '"/>' +
+      '<path d="M36 24 Q60 16 84 24 Q95 38 89 58 Q83 74 81 86 Q79 101 60 101 Q41 101 39 86 Q37 74 31 58 Q25 38 36 24 Z" fill="' + c[0] + '"/>' + (o.marks || '') +
+      '<ellipse cx="60" cy="86" rx="21.5" ry="15" fill="' + o.muzzle + '"/><ellipse cx="50" cy="84" rx="3.6" ry="4.4" fill="' + o.nostril + '" transform="rotate(-12 50 84)"/><ellipse cx="70" cy="84" rx="3.6" ry="4.4" fill="' + o.nostril + '" transform="rotate(12 70 84)"/>' + softSmile(92, 10, o.line) + (o.top || '');
+  }
+  // a tapering stripe from the edge of the face, and the same on the other side
+  function zebraStripes(col, list) { return '<path d="' + list.map(function (q) { return 'M' + q[0] + ' ' + q[1] + ' Q' + ((q[0] + q[4]) / 2) + ' ' + ((q[1] + q[5]) / 2 - 1) + ' ' + q[4] + ' ' + q[5] + ' Q' + ((q[2] + q[4]) / 2) + ' ' + ((q[3] + q[5]) / 2 + 1) + ' ' + q[2] + ' ' + q[3] + ' Z M' + (120 - q[0]) + ' ' + q[1] + ' Q' + (120 - (q[0] + q[4]) / 2) + ' ' + ((q[1] + q[5]) / 2 - 1) + ' ' + (120 - q[4]) + ' ' + q[5] + ' Q' + (120 - (q[2] + q[4]) / 2) + ' ' + ((q[3] + q[5]) / 2 + 1) + ' ' + (120 - q[2]) + ' ' + q[3] + ' Z'; }).join(' ') + '" fill="' + col + '"/>'; }
+  var ZEBRA = [[34, 27, 31, 33, 50, 36], [29, 36, 28, 42, 44, 39], [32, 60, 34, 66, 55, 60], [36, 70, 38, 77, 52, 70]];
+  // a woolly head; the face and ears take their own colours so the sheep can be any shade
+  function sheepHead(c, o) {
+    var wool = [[30, 32], [44, 22], [60, 18], [76, 22], [90, 32], [98, 48], [96, 64], [24, 64], [22, 48]].map(function (q) { return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="15" fill="' + c[0] + '"/>'; }).join('');
+    return '<ellipse cx="17" cy="62" rx="12" ry="6.5" fill="' + o.ear + '" transform="rotate(16 17 62)"/><ellipse cx="103" cy="62" rx="12" ry="6.5" fill="' + o.ear + '" transform="rotate(-16 103 62)"/>' + wool +
+      '<ellipse cx="60" cy="66" rx="27" ry="30" fill="' + o.face + '"/><circle cx="46" cy="36" r="11" fill="' + c[0] + '"/><circle cx="60" cy="33" r="12" fill="' + c[0] + '"/><circle cx="74" cy="36" r="11" fill="' + c[0] + '"/>' +
+      '<path d="M26 34 q5 -6 10 0 M16 52 q5 -6 10 0 M94 52 q5 -6 10 0 M84 34 q5 -6 10 0 M42 22 q5 -6 10 0 M68 22 q5 -6 10 0 M50 36 q5 -6 10 0 M64 40 q5 -6 10 0" stroke="' + c[1] + '" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="60" cy="82" rx="13" ry="10" fill="' + o.muzzle + '"/><path d="M55 77 L65 77 L60 82 Z" fill="' + o.nose + '"/>' + softSmile(83, 8, o.line);
+  }
+  function bigCatHead(c, o) {
+    var s = '<circle cx="28" cy="32" r="12" fill="' + c[0] + '"/><circle cx="92" cy="32" r="12" fill="' + c[0] + '"/><circle cx="28" cy="33" r="6.5" fill="' + (o.ear || c[1]) + '"/><circle cx="92" cy="33" r="6.5" fill="' + (o.ear || c[1]) + '"/>' +
+      '<ellipse cx="60" cy="60" rx="39" ry="37" fill="' + c[0] + '"/>' + (o.marks || '') +
+      '<ellipse cx="49" cy="79" rx="13" ry="10" fill="' + c[2] + '"/><ellipse cx="71" cy="79" rx="13" ry="10" fill="' + c[2] + '"/><ellipse cx="60" cy="87" rx="11" ry="8" fill="' + c[2] + '"/>' +
+      '<path d="M54 70 L66 70 L60 77 Z" fill="' + (o.nose || '#c9727e') + '"/>' + softSmile(77, 9, o.line || INK);
+    return s + '<path d="M16 72 L38 76 M18 82 L38 80 M104 72 L82 76 M102 82 L82 80" stroke="' + (o.line || INK) + '" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>';
+  }
+  function rosettes(col, list) { return list.map(function (q) { return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (q[2] || 4.6) + '" fill="none" stroke="' + col + '" stroke-width="2.3" stroke-dasharray="4 2.4"/>'; }).join(''); }
+  var ROSETTES = [[32, 46], [44, 34, 4], [60, 30, 3.6], [76, 34, 4], [88, 46], [28, 62, 4], [92, 62, 4]];
+  function catTail(c, tip) { return '<g class="tail"><path d="M84 134 Q118 136 114 106 Q112 92 102 94" stroke="' + c[0] + '" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M107 95 Q103 92 100 94" stroke="' + (tip || c[1]) + '" stroke-width="9" fill="none" stroke-linecap="round"/></g>'; }
+  function cowTail(c, tuft, stem) { return '<g class="tail"><path d="M84 132 Q106 130 106 108" stroke="' + (stem || c[0]) + '" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M106 110 Q100 98 106 92 Q112 98 106 110 Z" fill="' + tuft + '"/></g>'; }
   var SPECIES = {
     cat: { top: 32, name: 'Cat', c: ['#e3954f', '#b86a2a', '#fff3e3'], iris: '#e8f06a', eyes: [58, 15],
       head: function (c) {
@@ -69,7 +108,7 @@
           '<ellipse cx="60" cy="66" rx="30" ry="28" fill="' + c[2] + '"/><ellipse cx="60" cy="80" rx="11" ry="8" fill="#fff4e2"/>' +
           '<circle cx="60" cy="76" r="4.5" fill="' + INK + '"/>' + smile(60, 82, 6);
       } },
-    badger: { top: 22, name: 'Badger', c: ['#7f8389', '#55595e', '#f2f2ee'], eyes: [54, 14],
+    badger: { darkEyes: true, top: 22, name: 'Badger', c: ['#7f8389', '#55595e', '#f2f2ee'], eyes: [54, 14],
       head: function (c) {
         return '<circle cx="28" cy="34" r="9" fill="' + INK + '" stroke="' + c[2] + '" stroke-width="2"/><circle cx="92" cy="34" r="9" fill="' + INK + '" stroke="' + c[2] + '" stroke-width="2"/>' +
           '<ellipse cx="60" cy="58" rx="36" ry="37" fill="' + c[2] + '"/>' +
@@ -93,14 +132,86 @@
           '<circle cx="60" cy="75" r="4" fill="#e0607a"/>' + smile(60, 79, 6) + whiskers(74);
       },
       tail: function () { return '<path class="tail" d="M84 134 Q116 138 112 112 Q110 100 100 104" stroke="#e8a3ae" stroke-width="3.5" fill="none" stroke-linecap="round"/>'; } },
-    frog: { top: 30, name: 'Frog', c: ['#5cae5a', '#3e8a3d', '#cdeac0'], eyes: [40, 22], eyeR: 9,
+    frog: { top: 25, name: 'Frog', c: ['#5cae5a', '#3e8a3d', '#cdeac0'], eyes: [40, 22], eyeR: 9,
       head: function (c) {
         return '<circle cx="38" cy="42" r="16" fill="' + c[0] + '"/><circle cx="82" cy="42" r="16" fill="' + c[0] + '"/>' +
           '<ellipse cx="60" cy="66" rx="44" ry="29" fill="' + c[0] + '"/>' +
           '<circle cx="54" cy="62" r="1.8" fill="' + c[1] + '"/><circle cx="66" cy="62" r="1.8" fill="' + c[1] + '"/>' +
           '<path d="M34 72 Q60 92 86 72" stroke="' + c[1] + '" stroke-width="3.5" fill="none" stroke-linecap="round"/>' +
           '<circle cx="30" cy="74" r="6" fill="#ff8a7a" opacity=".35"/><circle cx="90" cy="74" r="6" fill="#ff8a7a" opacity=".35"/>';
-      } }
+      } },
+    sheep: { top: 18, hatS: .92, name: 'White sheep', c: ['#f8f4ea', '#cfc5b1', '#fffdf8'], eyes: [60, 14], eyeR: 7.5,
+      head: function (c) { return sheepHead(c, { face: '#f2dccb', ear: '#e6c9b6', muzzle: '#eac6b4', nose: '#8c5a58', line: '#8c5a58' }); },
+      tail: function (c) { return '<circle class="tail" cx="88" cy="130" r="9" fill="' + c[0] + '"/>'; } },
+    blacksheep: { top: 18, hatS: .92, dark: true, name: 'Black sheep', c: ['#3b373b', '#5f595e', '#57504f'], eyes: [60, 14], eyeR: 7.5, ink: '#fff6e6',
+      head: function (c) { return sheepHead(c, { face: '#2a2629', ear: '#2a2629', muzzle: '#4a4345', nose: '#141112', line: '#e6dccf' }); },
+      tail: function (c) { return '<circle class="tail" cx="88" cy="130" r="9" fill="' + c[0] + '"/>'; } },
+    cow: { cheek: [67, 23], top: 20, hatS: .86, neckY: 6, name: 'Brown cow', c: ['#9a5f35', '#6e4122', '#f4e4cf'], eyes: [52, 20], eyeR: 8,
+      head: function (c) { return cowHead(c, { earFur: c[0], marks: '<path d="M60 24 L53 50 Q60 56 67 50 Z" fill="#f4e4cf"/>' }); },
+      tail: function (c) { return cowTail(c, c[1]); } },
+    cowbw: { darkEyes: true, cheek: [70, 23], top: 20, hatS: .86, neckY: 6, name: 'B&W Cow', said: 'B&W cow', c: ['#f7f5ef', '#26272b', '#ffffff'], eyes: [52, 20], eyeR: 8, ink: '#ffffff',
+      head: function (c) { return cowHead(c, { earFur: c[1], marks: '<path d="M32 28 Q44 22 53 25 Q56 44 50 62 Q38 68 28 58 Q24 42 32 28 Z M88 28 Q76 22 67 25 Q64 44 70 62 Q82 68 92 58 Q96 42 88 28 Z" fill="' + c[1] + '"/>' }); },
+      tail: function (c) { return cowTail(c, c[1], c[1]); } },
+    horse: { cheek: [66, 19], top: 18, hatS: .8, neckY: 6, name: 'Horse', c: ['#a8683a', '#3a261a', '#f0dcc0'], eyes: [50, 21], eyeR: 7.5,
+      head: function (c) { return horseHead(c, { muzzle: '#d8b598', nostril: '#5a3a2c', line: '#5a3a2c',
+        behind: '<path d="M84 26 Q104 44 98 78 Q96 92 86 100 Q90 72 80 40 Z" fill="' + c[1] + '"/>',
+        marks: '<path d="M60 34 Q55 54 54 74 L66 74 Q65 54 60 34 Z" fill="#f7efe2"/>',
+        top: '<path d="M43 21 Q60 10 77 21 Q75 34 64 44 Q63 36 60 32 Q56 38 52 42 Q46 32 43 21 Z" fill="' + c[1] + '"/>' }); },
+      tail: function (c) { return '<path class="tail" d="M84 124 Q104 112 112 126 Q120 140 108 151 Q106 138 98 136 Q90 134 84 134 Z" fill="' + c[1] + '"/>'; } },
+    zebra: { darkEyes: true, cheek: [66, 19], top: 18, hatS: .8, neckY: 6, name: 'Zebra', c: ['#f7f5ef', '#26272b', '#ffffff'], eyes: [50, 21], eyeR: 7.5,
+      head: function (c) { return horseHead(c, { earFur: '#d3d0c7', ear: '#3a3b40', muzzle: c[1], nostril: '#5a5b61', line: '#c9c9cf',
+        marks: zebraStripes(c[1], ZEBRA) + '<path d="M50 34 L60 46 L70 34 L70 40 L60 53 L50 40 Z M53 56 L60 62 L67 56 L67 61 L60 68 L53 61 Z" fill="' + c[1] + '"/>',
+        top: '<path d="M47 26 Q46 16 50 13 L54 13 L54 28 Z M56 26 L56 11 L64 11 L64 26 Z M73 26 Q74 16 70 13 L66 13 L66 28 Z" fill="' + c[1] + '"/><path d="M54 13 L56 11 L56 26 L54 28 Z M64 11 L66 13 L66 28 L64 26 Z" fill="' + c[0] + '"/>' }); },
+      tail: function (c) { return cowTail(c, c[1], c[1]); } },
+    capybara: { cheek: [62, 22], top: 24, hatS: .84, name: 'Capybara', c: ['#a5764a', '#7a5333', '#c79d72'], eyes: [46, 25], eyeR: 6.5,
+      head: function (c) {
+        return '<circle cx="32" cy="30" r="6.5" fill="' + c[1] + '"/><circle cx="88" cy="30" r="6.5" fill="' + c[1] + '"/>' +
+          '<path d="M32 30 Q60 24 88 30 Q95 44 95 68 Q95 90 84 97 Q60 102 36 97 Q25 90 25 68 Q25 44 32 30 Z" fill="' + c[0] + '"/>' +
+          '<ellipse cx="60" cy="79" rx="30" ry="19" fill="' + c[2] + '" opacity=".6"/>' +
+          '<ellipse cx="50" cy="71" rx="3.4" ry="2" fill="#4a2f1c" transform="rotate(-20 50 71)"/><ellipse cx="70" cy="71" rx="3.4" ry="2" fill="#4a2f1c" transform="rotate(20 70 71)"/>' + softSmile(86, 11, '#4a2f1c');
+      } },
+    axolotl: { umbrellaDX: 11, cheek: [72, 24], top: 34, hatS: .8, name: 'Axolotl', c: ['#f5b4c3', '#e0839b', '#fde0e6'], eyes: [58, 27], eyeR: 7.5,
+      head: function (c) {
+        function gill(x, y, dir, tilt) { var ends = [[-24, -18], [-30, -2], [-24, 14]]; return ends.map(function (e) { var ex = x - dir * e[0] * -1 * -1, ey = y + e[1]; ex = x + dir * 26 * (e[0] / -26); return '<path d="M' + x + ' ' + y + ' Q' + ((x + ex) / 2) + ' ' + (y + e[1] * .3) + ' ' + ex + ' ' + ey + '" stroke="#d95f83" stroke-width="5.5" fill="none" stroke-linecap="round"/><circle cx="' + ex + '" cy="' + ey + '" r="4.5" fill="#ee7d9e"/>'; }).join(''); }
+        return gill(26, 54, -1) + gill(94, 54, 1) +
+          '<ellipse cx="60" cy="64" rx="42" ry="32" fill="' + c[0] + '"/><ellipse cx="60" cy="78" rx="26" ry="15" fill="' + c[2] + '"/>' +
+          '<path d="M30 74 Q60 92 90 74" stroke="#b9506f" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+      },
+      tail: function (c) { return '<path class="tail" d="M84 136 Q118 132 116 100 Q114 112 100 116 Q90 120 82 122 Z" fill="' + c[1] + '"/>'; } },
+    koala: { top: 26, hatS: .8, name: 'Koala', c: ['#9aa1a8', '#70777e', '#ecedec'], eyes: [56, 17], eyeR: 7,
+      head: function (c) {
+        return '<g class="ears"><circle cx="24" cy="38" r="22" fill="' + c[0] + '"/><circle cx="96" cy="38" r="22" fill="' + c[0] + '"/><circle cx="24" cy="40" r="14" fill="' + c[2] + '"/><circle cx="96" cy="40" r="14" fill="' + c[2] + '"/></g>' +
+          '<ellipse cx="60" cy="60" rx="37" ry="36" fill="' + c[0] + '"/><ellipse cx="60" cy="90" rx="17" ry="7" fill="' + c[2] + '"/>' +
+          '<ellipse cx="60" cy="74" rx="9.5" ry="13.5" fill="#2a2d33"/><ellipse cx="57" cy="68" rx="2.2" ry="4" fill="#fff" opacity=".35"/>' + softSmile(88, 8, INK);
+      } },
+    sloth: { cheek: [77, 22], top: 22, hatS: .9, name: 'Sloth', c: ['#a58c6c', '#7d6549', '#efe2c8'], eyes: [58, 18], eyeR: 7, ink: '#fff6e6',
+      head: function (c) {
+        return '<ellipse cx="60" cy="60" rx="40" ry="38" fill="' + c[0] + '"/><path d="M24 44 Q26 26 40 28 M96 44 Q94 26 80 28 M50 24 Q60 18 70 24" stroke="' + c[1] + '" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+          '<ellipse cx="60" cy="66" rx="31" ry="29" fill="' + c[2] + '"/>' +
+          '<path d="M52 50 Q44 46 34 52 Q26 60 28 72 Q36 72 44 66 Q54 60 52 50 Z M68 50 Q76 46 86 52 Q94 60 92 72 Q84 72 76 66 Q66 60 68 50 Z" fill="#5a4332"/>' +
+          '<ellipse cx="60" cy="72" rx="6.5" ry="5" fill="#3b2c20"/>' + softSmile(80, 15, '#3b2c20');
+      } },
+    lion: { top: 14, hatS: .92, name: 'Lion', c: ['#e0a94f', '#b5672a', '#fbeed3'], eyes: [58, 15], eyeR: 7.5,
+      head: function (c) {
+        var mane = '';
+        for (var i = 0; i < 14; i++) { var a = i / 14 * Math.PI * 2; mane += '<circle cx="' + (60 + Math.cos(a) * 36).toFixed(1) + '" cy="' + (60 + Math.sin(a) * 36).toFixed(1) + '" r="15" fill="' + (i % 2 ? c[1] : '#99521f') + '"/>'; }
+        return mane + '<circle cx="60" cy="60" r="38" fill="' + c[1] + '"/><circle cx="36" cy="33" r="8" fill="' + c[0] + '"/><circle cx="84" cy="33" r="8" fill="' + c[0] + '"/><circle cx="36" cy="34" r="4" fill="#8a4c1e"/><circle cx="84" cy="34" r="4" fill="#8a4c1e"/>' +
+          '<ellipse cx="60" cy="62" rx="30" ry="31" fill="' + c[0] + '"/><ellipse cx="51" cy="79" rx="11" ry="8.5" fill="' + c[2] + '"/><ellipse cx="69" cy="79" rx="11" ry="8.5" fill="' + c[2] + '"/><ellipse cx="60" cy="87" rx="9" ry="6.5" fill="' + c[2] + '"/>' +
+          '<path d="M54 71 L66 71 L60 77 Z" fill="#8a4c3c"/>' + softSmile(77, 8, INK);
+      },
+      tail: function (c) { return '<g class="tail"><path d="M84 134 Q114 134 112 106" stroke="' + c[0] + '" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="112" cy="100" r="8" fill="' + c[1] + '"/></g>'; } },
+    snowleopard: { tailBehind: true, top: 22, hatS: .9, name: 'Snow leopard', c: ['#d6d9d8', '#8d9496', '#f7f7f4'], eyes: [58, 17], eyeR: 7.5,
+      head: function (c) { return bigCatHead(c, { marks: rosettes('#4d5457', ROSETTES), nose: '#b98088', ear: '#7d8588' }); },
+      tail: function (c) { return '<g class="tail"><path d="M84 134 Q122 136 116 100 Q113 86 100 90" stroke="' + c[0] + '" stroke-width="13" fill="none" stroke-linecap="round"/><path d="M112 118 L120 116 M112 104 L120 102" stroke="#4d5457" stroke-width="3" stroke-linecap="round"/></g>'; } },
+    panther: { top: 22, hatS: .9, dark: true, name: 'Black panther', c: ['#26262d', '#141418', '#3a3a44'], eyes: [58, 17], eyeR: 7.5, ink: '#f4d35e',
+      head: function (c) { return bigCatHead(c, { marks: rosettes('#3a3a44', ROSETTES), nose: '#0d0d10', ear: '#141418', line: '#c9c9d4' }); },
+      tail: function (c) { return catTail(c); } },
+    leopard: { top: 22, hatS: .9, name: 'Leopard', c: ['#e8b45a', '#7a4d1e', '#fdf3df'], eyes: [58, 17], eyeR: 7.5,
+      head: function (c) { return bigCatHead(c, { marks: rosettes('#3b2714', ROSETTES), nose: '#c9727e', ear: '#3b2714' }); },
+      tail: function (c) { return catTail(c, '#3b2714'); } },
+    puma: { top: 22, hatS: .9, name: 'Puma', c: ['#c99a62', '#96683a', '#f8ecd9'], eyes: [58, 17], eyeR: 7.5,
+      head: function (c) { return bigCatHead(c, { marks: '<path d="M44 74 Q36 74 34 82 M76 74 Q84 74 86 82" stroke="#3a2a1c" stroke-width="3" fill="none" stroke-linecap="round"/>', nose: '#b9707a', ear: '#3a2a1c' }); },
+      tail: function (c) { return catTail(c, '#2e2118'); } }
   };
   // baddie versions are a little darker and sharper
   var BADDIE_COLOURS = { cat: ['#8c7fa8', '#6a5d88', '#d9d2e6'], fox: ['#c4622a', '#8f4316', '#fff1e2'], wolf: ['#7f8891', '#525961', '#dde1e6'], crow: ['#2f3440', '#1c2029', '#4a5060'] };
@@ -111,8 +222,8 @@
       '<circle cx="' + (60 - dx + 1) + '" cy="' + (y + 1) + '" r="' + (r * .62) + '" fill="' + INK + '"/><circle cx="' + (60 + dx + 1) + '" cy="' + (y + 1) + '" r="' + (r * .62) + '" fill="' + INK + '"/>' +
       '<circle cx="' + (60 - dx + 3) + '" cy="' + (y - 2) + '" r="' + (r * .22) + '" fill="#fff"/><circle cx="' + (60 + dx + 3) + '" cy="' + (y - 2) + '" r="' + (r * .22) + '" fill="#fff"/></g>';
   }
-  function happyEyes(y, dx) {
-    return '<path d="M' + (60 - dx - 7) + ' ' + (y + 2) + ' Q' + (60 - dx) + ' ' + (y - 7) + ' ' + (60 - dx + 7) + ' ' + (y + 2) + ' M' + (60 + dx - 7) + ' ' + (y + 2) + ' Q' + (60 + dx) + ' ' + (y - 7) + ' ' + (60 + dx + 7) + ' ' + (y + 2) + '" stroke="' + INK + '" stroke-width="4" fill="none" stroke-linecap="round"/>';
+  function happyEyes(y, dx, col) {
+    return '<path d="M' + (60 - dx - 7) + ' ' + (y + 2) + ' Q' + (60 - dx) + ' ' + (y - 7) + ' ' + (60 - dx + 7) + ' ' + (y + 2) + ' M' + (60 + dx - 7) + ' ' + (y + 2) + ' Q' + (60 + dx) + ' ' + (y - 7) + ' ' + (60 + dx + 7) + ' ' + (y + 2) + '" stroke="' + (col || INK) + '" stroke-width="4" fill="none" stroke-linecap="round"/>';
   }
   // scheming eyes: lids flat across the top, slit pupils that glance from side to side
   function slyEyes(y, dx, iris, soft) {
@@ -169,12 +280,12 @@
     }
     var older = t === 'big' || t === 'pro';
     var arms = role === 'avatar' && kind !== 'crow' && o.mood === 'cheer' ? '<g class="arm-l"><ellipse cx="16" cy="88" rx="7" ry="14" fill="' + c[1] + '" transform="rotate(-28 16 88)"/></g><g class="arm-r"><ellipse cx="104" cy="88" rx="7" ry="14" fill="' + c[1] + '" transform="rotate(28 104 88)"/></g>' : '';
-    var eyes = role === 'avatar' ? (o.mood === 'happy' || o.mood === 'cheer' ? happyEyes(sp.eyes[0], sp.eyes[1]) : friendlyEyes(sp.eyes[0], sp.eyes[1], (sp.eyeR || 8.5) * (t === 'little' ? 1.12 : 1)))
+    var eyes = role === 'avatar' ? (o.mood === 'happy' || o.mood === 'cheer' ? happyEyes(sp.eyes[0], sp.eyes[1], sp.ink) : friendlyEyes(sp.eyes[0], sp.eyes[1], (sp.eyeR || 8.5) * (t === 'little' ? 1.12 : 1)))
       : slyEyes(sp.eyes[0], sp.eyes[1], sp.iris || '#e8f06a', t === 'little');
     // little explorers have rosier cheeks; adventurers have confident eyebrows
     var face = '';
-    if (role === 'avatar' && t === 'little') face = '<circle cx="' + (60 - sp.eyes[1] - 8) + '" cy="' + (sp.eyes[0] + 15) + '" r="6.5" fill="#ff8a7a" opacity=".38"/><circle cx="' + (60 + sp.eyes[1] + 8) + '" cy="' + (sp.eyes[0] + 15) + '" r="6.5" fill="#ff8a7a" opacity=".38"/>';
-    if (role === 'avatar' && older && o.mood !== 'happy' && o.mood !== 'cheer') face = '<path d="M' + (60 - sp.eyes[1] - 8) + ' ' + (sp.eyes[0] - 13) + ' Q' + (60 - sp.eyes[1]) + ' ' + (sp.eyes[0] - 17) + ' ' + (60 - sp.eyes[1] + 8) + ' ' + (sp.eyes[0] - 13) + ' M' + (60 + sp.eyes[1] - 8) + ' ' + (sp.eyes[0] - 13) + ' Q' + (60 + sp.eyes[1]) + ' ' + (sp.eyes[0] - 17) + ' ' + (60 + sp.eyes[1] + 8) + ' ' + (sp.eyes[0] - 13) + '" stroke="' + INK + '" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    if (role === 'avatar' && t === 'little') { var ck = sp.cheek || [sp.eyes[0] + 15, sp.eyes[1] + 8]; face = '<circle cx="' + (60 - ck[1]) + '" cy="' + ck[0] + '" r="6.5" fill="#ff8a7a" opacity=".38"/><circle cx="' + (60 + ck[1]) + '" cy="' + ck[0] + '" r="6.5" fill="#ff8a7a" opacity=".38"/>'; }
+    if (role === 'avatar' && older && o.mood !== 'happy' && o.mood !== 'cheer') face = '<path d="M' + (60 - sp.eyes[1] - 8) + ' ' + (sp.eyes[0] - 13) + ' Q' + (60 - sp.eyes[1]) + ' ' + (sp.eyes[0] - 17) + ' ' + (60 - sp.eyes[1] + 8) + ' ' + (sp.eyes[0] - 13) + ' M' + (60 + sp.eyes[1] - 8) + ' ' + (sp.eyes[0] - 13) + ' Q' + (60 + sp.eyes[1]) + ' ' + (sp.eyes[0] - 17) + ' ' + (60 + sp.eyes[1] + 8) + ' ' + (sp.eyes[0] - 13) + '" stroke="' + (sp.ink || INK) + '" stroke-width="3" fill="none" stroke-linecap="round"/>';
     // older baddies wear armour
     var armour = '';
     if (older && role === 'guard') armour = '<ellipse cx="34" cy="104" rx="14" ry="9" fill="#7c8894"/><ellipse cx="86" cy="104" rx="14" ry="9" fill="#7c8894"/><path d="M24 104 Q34 96 44 104 M76 104 Q86 96 96 104" stroke="#aeb8c2" stroke-width="2.5" fill="none"/>';
@@ -191,12 +302,12 @@
     }
     return '<svg class="char ' + role + ' ' + kind + ' ' + (o.cls || '') + '" overflow="visible" style="--d:-' + (Math.random() * 5).toFixed(2) + 's" viewBox="0 -8 120 152" width="' + size + '" height="' + Math.round(size * 1.27) + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
       '<ellipse cx="60" cy="142" rx="34" ry="4" fill="' + INK + '" opacity=".12"/>' +
-      outfitBack + (sp.tail ? sp.tail(c) : '') + '<g class="breathe">' + body + hoodie + armour + hood + sp.head(c) + eyes + face + crown + helmet + outfit + arms + '</g></svg>';
+      (sp.tailBehind ? (sp.tail ? sp.tail(c) : '') + outfitBack : outfitBack + (sp.tail ? sp.tail(c) : '')) + '<g class="breathe">' + body + hoodie + armour + hood + sp.head(c) + eyes + face + crown + helmet + outfit + arms + '</g></svg>';
   };
 
   // ---------- who can be what ----------
-  OM.animalName = function (id) { return ((SPECIES[id] || SPECIES.otter).name).toLowerCase(); };
-  OM.AVATARS = ['otter', 'rabbit', 'hedgehog', 'fox', 'badger', 'squirrel', 'mouse', 'frog', 'cat'].map(function (id) { return { id: id, name: SPECIES[id].name }; });
+  OM.animalName = function (id) { var sp = SPECIES[id] || SPECIES.otter; return sp.said || sp.name.toLowerCase(); };
+  OM.AVATARS = ['otter', 'rabbit', 'hedgehog', 'fox', 'badger', 'squirrel', 'mouse', 'frog', 'cat', 'sheep', 'blacksheep', 'cow', 'cowbw', 'horse', 'zebra', 'capybara', 'axolotl', 'koala', 'sloth', 'lion', 'snowleopard', 'panther', 'leopard', 'puma'].map(function (id) { return { id: id, name: SPECIES[id].name }; });
     // Guards are named per area. Area ids are shared by every year; Year 6 adds calc (all four operations), ra (ratio) and al (algebra).
   function guards(npv, as, md, fr, me, sh, po, st, calc, ra, al) { return { npv: npv, as: as, md: md, fr: fr, me: me, sh: sh, po: po, st: st, calc: calc, ra: ra, al: al }; }
   OM.BADDIES = {

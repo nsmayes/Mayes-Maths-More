@@ -1,7 +1,7 @@
 /* Mayes Maths & More — the dressing-up chest: the catalogue of outfits bought with acorns, and how each is drawn.
    Seven slots: hat, neck, eyes, badge, back, held (something to hold) and magic (an animated effect).
-   Every item is drawn from the animal's own measurements (head top, eye height and spacing), so it fits all nine
-   animals. Items are tagged with the age groups they suit (little = Years 1–2, mid = 3–4, big = 5–6, pro = 7–11);
+   Every item is drawn from the animal's own measurements (head top, eye height and spacing), so it fits every
+   animal. Items are tagged with the age groups they suit (little = Years 1–2, mid = 3–4, big = 5–6, pro = 7–11);
    each age group sees about 100 of them. Prices run from a few acorns to Legendary items worth weeks of saving. */
 (function (G) {
   'use strict';
@@ -119,7 +119,7 @@
     magnifier: function () { return '<path d="M92 132 L100 118" stroke="#8a5a3a" stroke-width="4.5" stroke-linecap="round"/><circle cx="105" cy="108" r="10" fill="#cfe8f6" fill-opacity=".5" stroke="#2b2f36" stroke-width="3"/>'; },
     trophy: function () { return '<path d="M94 102 H112 V108 Q112 120 103 121 Q94 120 94 108 Z" fill="#f2c53a" stroke="#c99a12" stroke-width="1.5"/><path d="M94 105 Q86 105 88 112 Q90 116 95 114 M112 105 Q120 105 118 112 Q116 116 111 114" stroke="#c99a12" stroke-width="2" fill="none"/><rect x="100" y="121" width="6" height="7" fill="#c99a12"/><rect x="95" y="128" width="16" height="5" rx="1.5" fill="#8a5a3a"/>' + star(103, 110, 4, 1.8, '#fff'); },
     flag: function (c) { return '<path d="M96 136 V74" stroke="#8a5a3a" stroke-width="3" stroke-linecap="round"/><path d="M96 76 Q108 72 118 78 Q108 82 118 90 Q108 86 96 90 Z" fill="' + c + '"/>'; },
-    umbrella: function (c) { return '<path d="M98 138 V64" stroke="#2b2f36" stroke-width="2.5"/><path d="M98 138 Q98 142 94 142" stroke="#2b2f36" stroke-width="2.5" fill="none"/><path d="M70 66 Q98 36 126 66 Q119 60 112 66 Q105 60 98 66 Q91 60 84 66 Q77 60 70 66 Z" fill="' + c + '"/>'; },
+    umbrella: function (c) { return '<g transform="rotate(10 98 126)"><path d="M98 138 V64" stroke="#2b2f36" stroke-width="2.5"/><path d="M98 138 Q98 142 94 142" stroke="#2b2f36" stroke-width="2.5" fill="none"/><path transform="translate(98 66) scale(.85) translate(-98 -66)" d="M70 66 Q98 36 126 66 Q119 60 112 66 Q105 60 98 66 Q91 60 84 66 Q77 60 70 66 Z" fill="' + c + '"/></g>'; },
     guitar: function () { return '<g transform="rotate(30 102 118)"><rect x="100" y="76" width="5" height="34" fill="#5a3818"/><rect x="98" y="72" width="9" height="8" rx="2" fill="#2b2f36"/><path d="M102 106 Q90 108 92 120 Q90 132 102 134 Q114 132 112 120 Q114 108 102 106 Z" fill="#d9822b" stroke="#9a5a1a" stroke-width="1.5"/><circle cx="102" cy="120" r="3.5" fill="#2b2f36"/></g>'; },
     mic: function () { return '<path d="M92 132 L100 108" stroke="#2b2f36" stroke-width="5" stroke-linecap="round"/><circle cx="102" cy="102" r="7.5" fill="#9aa6b1" stroke="#6f7a85" stroke-width="1.5"/><path d="M96 100 H108 M96 104 H108" stroke="#6f7a85" stroke-width="1"/>'; },
     racket: function (c) { return '<path d="M92 136 L100 116" stroke="#2b2f36" stroke-width="4" stroke-linecap="round"/><ellipse cx="104" cy="104" rx="9" ry="12" fill="#f4f4f0" fill-opacity=".3" stroke="' + c + '" stroke-width="3" transform="rotate(20 104 104)"/><path d="M98 98 L110 110 M100 94 L112 106 M96 102 L108 114 M104 94 L98 112 M108 96 L102 114" stroke="#d6d6d0" stroke-width=".8"/>'; },
@@ -239,6 +239,13 @@
   // ---------- drawing what an animal is wearing ----------
   // wear: { hat, neck, eyes, badge, back, held, magic } as item values (e.g. 'beanie:red'); older saves used scarf (a colour) and glasses (true)
   function parse(v) { var p = String(v).split(':'), cs = (p[1] || '').split('+'); return { d: p[0], c: COL[cs[0]] || null, c2: COL[cs[1]] || null }; }
+  // black or navy things vanish against a dark animal, so on those animals they get a thin pale edge
+  var rimN = 0;
+  function rimmed(svg, colour, sp) {
+    if (!sp.dark || (colour && colour !== COL.black && colour !== COL.navy)) return svg;
+    var id = 'omrim' + (++rimN);
+    return '<filter id="' + id + '" x="-15%" y="-15%" width="130%" height="130%"><feMorphology in="SourceAlpha" operator="dilate" radius=".75" result="d"/><feFlood flood-color="#c4cdd6"/><feComposite in2="d" operator="in" result="o"/><feMerge><feMergeNode in="o"/><feMergeNode in="SourceGraphic"/></feMerge></filter><g filter="url(#' + id + ')">' + svg + '</g>';
+  }
   OM.drawOutfit = function (wear, sp) {
     var w = Object.assign({}, wear || {}), back = '', front = '';
     if (w.scarf && !w.neck) w.neck = 'scarf:' + (OLD_SCARF[w.scarf] || 'red');
@@ -247,11 +254,15 @@
     if (w.magic) { var m = parse(w.magic), mg = MAGIC[m.d] && MAGIC[m.d](); if (mg) { back += mg.back || ''; front += mg.front || ''; } }
     if (w.back) { var b = parse(w.back), bk = BACK[b.d] && BACK[b.d](b.c || COL.red, b.c2 || COL.yellow); if (bk) { back += bk.back || ''; front += bk.front || ''; } }
     var mid = '';
-    if (w.neck) { var n = parse(w.neck); if (NECK[n.d]) mid += NECK[n.d](n.c || COL.red, n.c2 || COL.white); }
+    if (w.neck) { var n = parse(w.neck); if (NECK[n.d]) { var nk = rimmed(NECK[n.d](n.c || COL.red, n.c2 || COL.white), n.c || COL.red, sp.darkNeck ? { dark: true } : sp); mid += sp.neckY ? '<g transform="translate(0 ' + sp.neckY + ')">' + nk + '</g>' : nk; } }
     if (w.badge) { var bd = parse(w.badge); if (BADGE[bd.d]) mid += '<circle cx="74" cy="110" r="8.5" fill="' + (bd.c || ({ moon: COL.navy, sun: COL.orange, paw: COL.brown, pi: COL.purple, plus: COL.teal, tick: COL.green, note: COL.purple, flower: COL.pink, rocket: COL.navy, smile: COL.yellow, football: COL.green })[bd.d] || COL.blue) + '" stroke="#fff" stroke-width="1.8"/>' + BADGE[bd.d](74, 110); }
-    if (w.eyes) { var e = parse(w.eyes); if (EYES[e.d]) mid += EYES[e.d](e.c || INK, gy, gx, gr); }
-    if (w.hat) { var h = parse(w.hat), hd = HAT[h.d] ? HAT[h.d](h.c || COL.red) : OM.HAT(w.hat); if (hd) mid += '<g transform="translate(60 ' + top + ') scale(' + hs + ') translate(-60 -25)">' + hd + '</g>'; }
-    if (w.held) { var hd = parse(w.held); if (HELD[hd.d]) mid += HELD[hd.d](hd.c || COL.red); }
+    if (w.eyes) { var e = parse(w.eyes); if (EYES[e.d]) mid += rimmed(EYES[e.d](e.c || INK, gy, gx, gr), e.c || COL.black, sp.darkEyes ? { dark: true } : sp); }
+    if (w.hat) { var h = parse(w.hat), hd = HAT[h.d] ? HAT[h.d](h.c || COL.red) : OM.HAT(w.hat); if (hd) {
+        // headphones go wider on animals whose eyes sit level with the ear cups, so the cups do not cover the eyes
+        var hsc = hs; if (h.d === 'headphones' && top + 25 * hs > gy - (sp.eyeR || 8.5)) hsc = Math.max(hs, (gx + (sp.eyeR || 8.5) + 1) / 26);
+        mid += rimmed('<g transform="translate(60 ' + top + ') scale(' + hsc + ') translate(-60 -25)">' + hd + '</g>', h.c || COL.red, sp);
+      } }
+    if (w.held) { var hd = parse(w.held); if (HELD[hd.d]) { var hh = HELD[hd.d](hd.c || COL.red); mid += hd.d === 'umbrella' && sp.umbrellaDX ? '<g transform="translate(' + sp.umbrellaDX + ' 0)">' + hh + '</g>' : hh; } }
     return { back: back, front: mid + front };
   };
 })(typeof window !== 'undefined' ? window : globalThis);
