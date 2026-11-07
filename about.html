@@ -2,7 +2,7 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: data:; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: data:; media-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0e2a2f">
@@ -42,16 +42,8 @@
   </section>
 
   <section class="card">
-    <h2>Software and voice credits</h2>
+    <h2>Software credits</h2>
     <dl>
-      <dt>Pip’s natural voice: Piper voice “en_GB-cori-medium” by Bryce Beattie</dt>
-      <dd>Public domain. Trained from public-domain LibriVox recordings. <a href="https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/cori/medium">Source</a>.</dd>
-      <dt>Piper speech engine and piper_phonemize, by Michael Hansen</dt>
-      <dd>MIT licence. <a href="https://github.com/rhasspy/piper">github.com/rhasspy/piper</a>, <a href="https://github.com/rhasspy/piper-phonemize">github.com/rhasspy/piper-phonemize</a>. WebAssembly build by Diffusion Studio (<a href="https://github.com/diffusionstudio/piper-wasm">piper-wasm</a>, MIT).</dd>
-      <dt>ONNX Runtime Web 1.18.0, © Microsoft Corporation</dt>
-      <dd>MIT licence. <a href="https://github.com/microsoft/onnxruntime">github.com/microsoft/onnxruntime</a>.</dd>
-      <dt>eSpeak NG (English data), inside piper_phonemize</dt>
-      <dd>GNU General Public License version 3. You may use, copy and share it. Its source code is available from <a href="https://github.com/espeak-ng/espeak-ng">github.com/espeak-ng/espeak-ng</a>. The app uses its English data only, otherwise unchanged; the script that builds the voice files from these public sources, <code>tools/build-voice.py</code>, is published alongside the app.</dd>
       <dt>QR codes for moving progress between devices</dt>
       <dd><a href="https://github.com/kazuhikoarase/qrcode-generator">qrcode-generator</a> 1.4.4, © 2009 Kazuhiko Arase, MIT licence. <a href="https://github.com/cozmo/jsQR">jsQR</a> 1.4.0 by Cosmo Wolfe and Jefff Nelson, <a href="js/vendor/APACHE-LICENSE-2.0.txt">Apache License 2.0</a>. “QR Code” is a registered trademark of DENSO WAVE INCORPORATED.</dd>
       <dt>Fonts: Fredoka and Lexend</dt>
@@ -59,7 +51,7 @@
     </dl>
   </section>
 </main>
-<footer class="wrap foot"><p><a href="index.html">Front page</a> · <a href="help.html">Help and contact</a> · <a href="play.html">Open the app</a></p><p class="muted"><span data-version>Version 60</span> · © 2026 Neil Mayes.</p></footer>
+<footer class="wrap foot"><p><a href="index.html">Front page</a> · <a href="help.html">Help and contact</a> · <a href="play.html">Open the app</a></p><p class="muted"><span data-version>Version 61</span> · © 2026 Neil Mayes.</p></footer>
 <script src="js/version.js"></script>
 </body>
 </html>

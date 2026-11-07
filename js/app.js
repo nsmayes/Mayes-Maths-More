@@ -191,9 +191,8 @@
       '<label class="switch"><input type="checkbox" name="soundOn"' + (s.muted ? '' : ' checked') + '><span class="track" aria-hidden="true"></span><span><b>Sound</b><small>Turn all sound on or off</small></span></label>' +
       '<fieldset' + (s.muted ? ' disabled' : '') + '><label class="switch"><input type="checkbox" name="sounds"' + (s.sounds ? ' checked' : '') + '><span class="track" aria-hidden="true"></span><span><b>Sound effects</b><small>Chimes for right answers and rewards</small></span></label>' +
       '<label>Read questions aloud<select name="readAloud"><option value="auto">Automatically</option><option value="tap">Only when I tap the speaker</option><option value="off">Never</option></select></label>' +
-      (OM.canSpeak() ? (App.profile ? '<p class="small-note">Voice and speed for <b>' + esc(App.profile.name) + '</b>. Each explorer can choose their own.</p>' : '<p class="small-note">The family voice, used by any explorer who has not chosen their own.</p>') + (vs.length ? '<label>Voice<select name="voice">' + vs.map(function (v) { return '<option value="' + esc(v.id) + '"' + (v.id === cur ? ' selected' : '') + '>' + esc(v.name) + ' (' + v.accent + (v.natural ? ', natural' : '') + (v.offline ? '' : ', needs internet') + ')</option>'; }).join('') + '</select></label>'
+      (OM.canSpeak() ? (App.profile ? '<p class="small-note">Voice and speed for <b>' + esc(App.profile.name) + '</b>. Each explorer can choose their own.</p>' : '<p class="small-note">The family voice, used by any explorer who has not chosen their own.</p>') + (vs.length ? '<label>Voice<select name="voice">' + vs.map(function (v) { return '<option value="' + esc(v.id) + '"' + (v.id === cur ? ' selected' : '') + '>' + esc(v.name) + ' (' + v.accent + (v.offline ? '' : ', needs internet') + ')</option>'; }).join('') + '</select></label>'
         : '<p class="small-note">No English voices are installed on this device. On Windows, add one in Settings, Time and language, Speech.</p>') +
-        (OM.naturalVoiceReady && !OM.naturalVoiceReady() ? '<p class="small-note">Pip’s natural voice is an optional extra (' + OM.offline.VOICE_MB + ' MB). A grown-up can add it in <b>Grown-ups’ area → Settings</b>.</p>' : '') +
         '<label>Speed<input type="range" name="rate" min="0.6" max="1.2" step="0.05" value="' + OM.voiceRate() + '"></label>' +
         '<button type="button" class="btn small ghost" data-sc="test">' + I('speaker', { size: 20 }) + 'Hear this voice</button>' : '<p class="small-note">This browser cannot read aloud.</p>') +
       '</fieldset>' +
@@ -1334,28 +1333,18 @@
     if (imp) imp.onchange = function () { var f = imp.files[0]; if (!f) return; OM.transfer.readFile(f).then(function (obj) { OM.transfer.review(obj, function (msg) { toast(msg); App.go('parent', { ok: true, tab: tab, child: sel }, true); }); }).catch(function () { toast('That file could not be read. Choose a Mayes Maths & More file.'); }); imp.value = ''; };
   };
 
-  // the grown-ups' "Using it offline" card: is the app saved, is Pip's voice saved (and a button to download it), is progress kept
+  // the grown-ups' "Using it offline" card: is the app saved, is progress kept
   function fillOfflineCard(box) {
-    var O = OM.offline, mb = O.VOICE_MB;
+    var O = OM.offline;
     if (!O.canSave) {
       box.innerHTML = '<h3>' + I('download', { size: 20 }) + ' Using Mayes Maths &amp; More offline</h3><p>This copy was opened from a file, so it cannot save itself for offline use or update itself. Open it from its web address and choose <b>Install</b> to use it offline. See the front page for the steps on each device.</p>';
       return;
     }
-    Promise.all([O.voiceSaved(), O.progressKept()]).then(function (st) {
-      var voice = st[0], kept = st[1];
+    O.progressKept().then(function (kept) {
       box.innerHTML = '<h3>' + I('download', { size: 20 }) + ' Using Mayes Maths &amp; More offline</h3><ul class="offlist">' +
         '<li class="' + (O.appSaved() ? 'ok' : 'wait') + '"><b>The app</b>' + (O.appSaved() ? 'Saved on this device. It works with no internet connection and updates itself when you are online.' : 'Being saved now. Reload the page once and it will work offline.') + (O.installed() ? '' : ' Tip: install it from the front page so it opens like an app.') + '</li>' +
-        '<li class="' + (voice ? 'ok' : 'wait') + '" id="voiceline"><b>Pip’s natural voice</b>' + (voice ? 'Saved on this device, so the natural voice works offline.' :
-          'Optional, not downloaded (' + mb + ' MB). Until you add it, Pip reads aloud with the device’s own voice. It is best downloaded on Wi-Fi, and is then saved on the device and works offline.<div class="vprog" hidden><span></span></div><button class="btn small" data-act="getvoice">' + I('download', { size: 18 }) + 'Download Pip’s voice (' + mb + ' MB)</button>') + '</li>' +
         '<li class="' + (kept ? 'ok' : 'wait') + '"><b>Saved progress</b>' + (kept ? 'The browser has agreed to keep progress on this device even when space runs low.' :
           'The browser may clear saved progress if the device runs short of space. <button class="btn small ghost" data-act="keepprog">Ask the browser to keep it</button> Making a backup now and then is the safest way.') + '</li></ul>';
-      var gv = box.querySelector('[data-act="getvoice"]');
-      if (gv) gv.onclick = function () {
-        var bar = box.querySelector('.vprog'), fill = bar.querySelector('span'); bar.hidden = false; gv.disabled = true; gv.textContent = 'Downloading…';
-        O.downloadVoice(function (f) { fill.style.width = Math.round(f * 100) + '%'; gv.textContent = 'Downloading… ' + Math.round(f * 100) + '%'; })
-          .then(function () { toast('Pip’s voice is saved on this device.'); fillOfflineCard(box); })
-          .catch(function () { toast('The download stopped. Check the internet connection and try again.'); fillOfflineCard(box); });
-      };
       var kp = box.querySelector('[data-act="keepprog"]');
       if (kp) kp.onclick = function () { O.keepProgress().then(function (ok) { toast(ok ? 'The browser will keep progress on this device.' : 'This browser did not agree. Installing the app, and making backups, keeps progress safe.'); fillOfflineCard(box); }); };
     });
@@ -1390,5 +1379,4 @@
   }
   App.go('home');
   splash();
-  G.setTimeout(function () { OM.prepareVoice(); }, 800);
 })(window);

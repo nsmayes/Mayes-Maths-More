@@ -18,20 +18,6 @@
     btn.onclick = function () { O.install().then(function (ok) { if (ok) say('Installed. Look for Pip’s icon on this device.'); show(); }); };
     O.onInstalled = function () { btn.hidden = true; say('Installed. Look for Pip’s icon on this device.'); };
   }
-  // the optional natural voice: download it only if the grown-up chooses
-  var vb = doc.getElementById('voiceBtn'), vs = doc.getElementById('voiceStatus'), bar = doc.querySelector('.vbar');
-  if (vb) {
-    if (!O.canSave) { vb.hidden = true; vs.textContent = 'This copy was opened from a file and already includes the voice.'; }
-    else O.voiceSaved().then(function (saved) {
-      if (saved) { vb.hidden = true; vs.textContent = 'Pip’s voice is saved on this device.'; return; }
-      vb.onclick = function () {
-        vb.disabled = true; bar.hidden = false;
-        O.downloadVoice(function (f) { bar.firstChild.style.width = Math.round(f * 100) + '%'; vb.textContent = 'Downloading… ' + Math.round(f * 100) + '%'; })
-          .then(function () { vb.hidden = true; bar.hidden = true; vs.textContent = 'Done. Pip’s voice is saved on this device and works offline.'; })
-          .catch(function () { vb.disabled = false; vb.textContent = 'Try again'; vs.textContent = 'The download stopped. Check the internet connection and try again.'; });
-      };
-    });
-  }
   // open the install steps for this device
   var ua = (G.navigator.userAgent || '').toLowerCase(), os = /iphone|ipad|ipod/.test(ua) || (/macintosh/.test(ua) && G.navigator.maxTouchPoints > 1) ? 'ios' : /android/.test(ua) ? 'android' : /firefox/.test(ua) ? 'firefox' : /cros/.test(ua) ? 'chromeos' : /macintosh/.test(ua) ? 'mac' : /windows/.test(ua) ? 'windows' : 'linux';
   var first = doc.querySelector('details[data-os~="' + os + '"]');

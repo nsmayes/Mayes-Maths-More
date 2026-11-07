@@ -44,12 +44,6 @@ details ol { margin: 8px 0 2px; padding-left: 22px; }
   .brand-mark { width: 180px; height: 180px; }
   .hero h1 { font-size: 1.8em; }
 }
-.voicebox { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.voicebox .btn { background: var(--teal); color: #fff; box-shadow: inset 0 -4px 0 #0a7466; }
-.voicebox .btn:disabled { opacity: .7; cursor: default; }
-.vbar { flex: 1 1 200px; height: 10px; border-radius: 6px; background: #dfe8e5; overflow: hidden; }
-.vbar span { display: block; height: 100%; width: 0; background: var(--teal); transition: width .2s; }
-.status2 { margin: 0; color: var(--muted); font-size: .95em; flex-basis: 100%; }
 /* the logo: the M³ mark with Pip, the name and the line underneath */
 .brand { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .brand-mark { width: 230px; height: 230px; overflow: visible; }

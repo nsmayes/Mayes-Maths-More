@@ -1,5 +1,4 @@
-/* Learn with Pip — read-aloud and sound effects.
-   The natural offline voice (Cori, js/neural.js) is used when it is chosen and ready; otherwise the device's own voices. */
+/* Learn with Pip — read-aloud, using the device's own voices, and sound effects. */
 (function (G) {
   'use strict';
   var OM = G.OM, voice = null, current = null;
@@ -15,31 +14,21 @@
   function chosenVoice() { var p = who(); return p && p.voice ? p.voice : OM.Store.settings().voice; }
   function chosenRate() { var p = who(); return (p && p.rate) || OM.Store.settings().rate || 0.95; }
   OM.voiceRate = chosenRate;
-  // Pip's natural voice is an optional 97 MB download. On the website it is only used once a grown-up has chosen to save
-  // it on the device (Grown-ups' area → Settings, or the front page); a copy opened from a folder already includes it.
-  function naturalReady() { return !OM.offline || !OM.offline.canSave || OM.offline.voiceIsSaved; }
-  OM.naturalVoiceReady = naturalReady;
-  // the natural voice is wanted when it is chosen, or when nothing is chosen and it is available
-  function wantsNatural() { var w = chosenVoice(); return !!OM.neural && OM.neural.supported() && OM.neural.state() !== 'failed' && naturalReady() && (!w || w.indexOf('pip:') === 0); }
   function pickVoice() {
     var list = englishVoices(), want = chosenVoice();
-    if (want && want.indexOf('pip:') === 0) want = null;
     voice = (want && list.filter(function (v) { return v.voiceURI === want; })[0]) || list[0] || null;
     return voice;
   }
   if (G.speechSynthesis) { pickVoice(); G.speechSynthesis.onvoiceschanged = function () { pickVoice(); if (OM.onVoicesChanged) OM.onVoicesChanged(); }; }
-  OM.canSpeak = function () { return !!G.speechSynthesis || !!(OM.neural && OM.neural.supported()); };
+  OM.canSpeak = function () { return !!G.speechSynthesis; };
   OM.voices = function () {
-    var natural = OM.neural && OM.neural.supported() && OM.neural.state() !== 'failed' && naturalReady() ? OM.neural.voices.slice() : [];
-    return natural.concat(englishVoices().map(function (v) {
+    return englishVoices().map(function (v) {
       var accent = { 'en-GB': 'British', 'en-US': 'American', 'en-AU': 'Australian', 'en-IE': 'Irish', 'en-IN': 'Indian', 'en-CA': 'Canadian', 'en-NZ': 'New Zealand', 'en-ZA': 'South African' }[v.lang.replace('_', '-')] || v.lang;
       return { id: v.voiceURI, name: v.name.replace(/^(Microsoft|Google)\s+/, '').replace(/\s+(Online \(Natural\)\s+)?-\s+English.*$/, ''), accent: accent, offline: v.localService };
-    }));
+    });
   };
-  OM.currentVoiceId = function () { pickVoice(); return wantsNatural() ? OM.neural.voices[0].id : voice ? voice.voiceURI : null; };
-  OM.setVoice = function (id) { var p = who(); if (p) p.voice = id || null; else OM.Store.settings().voice = id || null; OM.Store.save(); pickVoice(); if (wantsNatural()) OM.neural.load().catch(function () {}); };
-  // start getting the natural voice ready in the background, so it is usually ready before the first question is read
-  OM.prepareVoice = function () { if (wantsNatural() && OM.neural.state() === 'idle') OM.neural.load().catch(function () { if (OM.onVoicesChanged) OM.onVoicesChanged(); }); };
+  OM.currentVoiceId = function () { pickVoice(); return voice ? voice.voiceURI : null; };
+  OM.setVoice = function (id) { var p = who(); if (p) p.voice = id || null; else OM.Store.settings().voice = id || null; OM.Store.save(); pickVoice(); };
   OM.soundOn = function () { return !OM.Store.settings().muted; };
   OM.say = function (htmlOrText, opts) {
     var s = OM.Store.settings();
@@ -49,14 +38,6 @@
     var text = OM.speakable(htmlOrText);
     if (!text) return;
     pickVoice();
-    if (wantsNatural()) {
-      if (OM.neural.state() === 'ready') {
-        var job = {}; current = job; notify(text);
-        OM.neural.speak(text, { rate: chosenRate(), onend: function () { if (current === job) { current = null; notify(null); } } });
-        return;
-      }
-      OM.prepareVoice(); // not ready yet: use the device's voice this time
-    }
     if (!G.speechSynthesis) return;
     var u = new G.SpeechSynthesisUtterance(text);
     if (voice || pickVoice()) u.voice = voice;
@@ -67,11 +48,9 @@
     current = u; notify(text);
     G.speechSynthesis.speak(u);
   };
-  OM.stopSpeaking = function () { if (G.speechSynthesis) G.speechSynthesis.cancel(); if (OM.neural) OM.neural.stop(); if (current) { current = null; notify(null); } };
+  OM.stopSpeaking = function () { if (G.speechSynthesis) G.speechSynthesis.cancel(); if (current) { current = null; notify(null); } };
   OM.autoSay = function (t) {
-    var s = OM.Store.settings();
-    if (s.readAloud === 'auto') return OM.say(t);
-    if (!s.muted && wantsNatural()) OM.neural.prepare(OM.speakable(t), chosenRate());
+    if (OM.Store.settings().readAloud === 'auto') return OM.say(t);
   };
 
   var ctx = null;

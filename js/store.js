@@ -8,6 +8,9 @@
   data.settings = Object.assign(blank().settings, data.settings || {});
   // animations are on unless a grown-up has chosen otherwise (earlier versions followed the device setting by default)
   if (!data.settings.motionChosen) data.settings.motion = 'on';
+  // Pip's natural voice has gone: anyone who had it goes back to the device's own voice
+  var noNatural = function (o) { if (o && typeof o.voice === 'string' && o.voice.indexOf('pip:') === 0) o.voice = null; };
+  noNatural(data.settings); data.profiles.forEach(noNatural);
   // the text style used to be one setting for everyone: each child keeps what was chosen
   if (data.settings.font) { if (data.settings.font === 'dyslexia') data.profiles.forEach(function (q) { if (!q.font) q.font = 'dyslexia'; }); delete data.settings.font; }
 
@@ -36,7 +39,7 @@
     if ((OMx.TIERS || []).some(function (t) { return t.id === c.look; })) o.look = c.look;
     if (c.tier === 'foundation' || c.tier === 'higher') o.tier = c.tier;
     if ((OMx.EXAM_BOARDS || []).some(function (b) { return b.id === c.board; })) o.board = c.board;
-    if (typeof c.voice === 'string' && /^[\w:.\-+ ()]{1,100}$/.test(c.voice)) o.voice = c.voice;
+    if (typeof c.voice === 'string' && /^[\w:.\-+ ()]{1,100}$/.test(c.voice) && c.voice.indexOf('pip:') !== 0) o.voice = c.voice;
     if (c.rate !== undefined) o.rate = num(c.rate, 0.5, 2, 0.95);
     if (/^\d{3}$/.test(String(c.code))) o.code = String(c.code);
     if (typeof c.codeOn === 'boolean') o.codeOn = c.codeOn;
