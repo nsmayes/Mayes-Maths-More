@@ -39,6 +39,11 @@ details ol { margin: 8px 0 2px; padding-left: 22px; }
 .topbar { background: var(--deep); padding: 14px 0; }
 .topbar a { color: #fff; font-family: var(--display); font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
 .topbar img { width: 36px; height: 36px; border-radius: 10px; }
+/* the way back (js/pages.js): at the right of the top bar, or in its own bar on the front page */
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.topbar a.backlink, .backbar a.backlink { font-family: var(--font, inherit); font-weight: 600; font-size: .95em; color: #fbf7eb; text-decoration: underline; text-underline-offset: 3px; padding: 8px 2px; }
+.backbar { background: var(--deep); padding: 6px 0; }
+.backlink:focus-visible { outline: 3px solid #9fdcff; outline-offset: 2px; border-radius: 6px; }
 @media (max-width: 820px) {
   .hero .wrap, .grid3, .grid2 { grid-template-columns: 1fr; }
   .brand-mark { width: 180px; height: 180px; }
